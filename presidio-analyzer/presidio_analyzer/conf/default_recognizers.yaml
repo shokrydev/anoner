@@ -286,6 +286,14 @@ recognizers:
     type: predefined
     enabled: false
 
+  # NER-based recognizers (require model downloads)
+  - name: NvidiaGLiNERPIIRecognizer
+    supported_languages:
+    - de
+    - en
+    type: predefined
+    enabled: false
+
   - name: OllamaRecognizer
     class_name: OllamaLangExtractRecognizer
     supported_languages:
