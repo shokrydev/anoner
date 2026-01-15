@@ -294,6 +294,13 @@ recognizers:
     type: predefined
     enabled: false
 
+  - name: MinistralOllamaRecognizer
+    supported_languages:
+    - de
+    - en
+    type: predefined
+    enabled: false
+
   - name: OllamaRecognizer
     class_name: OllamaLangExtractRecognizer
     supported_languages:
