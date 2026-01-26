@@ -23,9 +23,15 @@ def entities():
         ("LM2N3P4T5", 1, ((0, 9),), ((0.1, 1.0),)),
         ("T12345679", 1, ((0, 9),), ((0.1, 1.0),)),
 
+        # Valid MRZ format (10 characters = 9 doc number + 1 check digit)
+        ("L01X00T471", 1, ((0, 10),), ((0.1, 1.0),)),
+        ("CF0HK0K086", 1, ((0, 10),), ((0.1, 1.0),)),
+        ("T123456798", 1, ((0, 10),), ((0.1, 1.0),)),
+
         # With surrounding text
         ("My ID number is CF0HK0K08 here", 1, ((16, 25),), ((0.1, 1.0),)),
         ("Personalausweis: LM2N3P4T5", 1, ((17, 26),), ((0.1, 1.0),)),
+        ("Personalausweis-Nr: L01X00T471", 1, ((20, 30),), ((0.1, 1.0),)),
 
         # Multiple IDs in text
         ("IDs: CF0HK0K08 and LM2N3P4T5", 2, ((5, 14), (19, 28)), ((0.1, 1.0), (0.1, 1.0))),
@@ -36,7 +42,7 @@ def entities():
 
         # Invalid - wrong length
         ("CF0HK0K", 0, (), ()),
-        ("CF0HK0K08XX", 0, (), ()),
+        ("CF0HK0K08XXX", 0, (), ()),
 
         # Invalid - only letters or only digits of wrong length
         ("ABCDEFGHIJ", 0, (), ()),
@@ -65,11 +71,16 @@ def test_when_personal_id_in_text_then_all_ids_found(
 @pytest.mark.parametrize(
     "text, expected",
     [
-        # Valid checksums
+        # Valid checksums - 9 char format
         ("CF0HK0K08", True),
         ("LM2N3P4T5", True),
+        # Valid checksums - 10 char MRZ format
+        ("L01X00T471", True),
+        ("CF0HK0K086", True),
+        ("T123456798", True),
         # Invalid checksum
         ("CF0HK0K05", False),
+        ("L01X00T472", False),
         # Invalid - contains vowels
         ("AEIOU1234", False),
         # Invalid - too short
@@ -87,5 +98,5 @@ def test_recognizer_initialization():
     recognizer = DePersonalIdRecognizer()
     assert recognizer.supported_entities == ["DE_PERSONAL_ID"]
     assert recognizer.supported_language == "de"
-    assert len(recognizer.patterns) == 2
+    assert len(recognizer.patterns) == 3
     assert len(recognizer.context) > 0

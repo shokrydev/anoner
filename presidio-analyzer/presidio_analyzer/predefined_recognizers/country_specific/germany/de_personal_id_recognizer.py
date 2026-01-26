@@ -8,10 +8,14 @@ class DePersonalIdRecognizer(PatternRecognizer):
     Recognize German Personalausweisnummer (Personal ID number) using regex and checksum.
 
     The German ID card number (Personalausweisnummer) has different formats:
-    - Old format (before Nov 2010): 10 characters alphanumeric
-    - New format (since Nov 2010): 9 characters alphanumeric
+    - New format (since Nov 2010): 9 alphanumeric characters (front of card)
+    - New format MRZ: 10 alphanumeric characters (9 document number + 1 check digit)
+    - Old format (before Nov 2010): 10 digits
 
-    Both formats use a check digit based on the ISO 7064 Mod 97 algorithm variant.
+    Valid characters (new format): C, F, G, H, J, K, L, M, N, P, R, T, V, W, X, Y, Z, 0-9
+    Excluded: vowels (A, E, I, O, U) and confusable letters (B, D, Q, S)
+
+    Checksum uses weighted sum algorithm (7, 3, 1 repeating).
 
     :param patterns: List of patterns to be used by this recognizer
     :param context: List of context words to increase confidence in detection
@@ -21,14 +25,20 @@ class DePersonalIdRecognizer(PatternRecognizer):
     """
 
     # Pattern source: https://www.personalausweisportal.de/Webs/PA/EN/citizens/german-id-card/german-id-card-node.html
+    # MRZ format: https://en.wikipedia.org/wiki/German_identity_card
     PATTERNS = [
         Pattern(
-            "Personal ID (new format)",
+            "Personal ID (MRZ format - 10 chars)",
+            r"\b[CFGHJKLMNPRTVWXYZ0-9]{10}\b",
+            0.1,
+        ),
+        Pattern(
+            "Personal ID (new format - 9 chars)",
             r"\b[CFGHJKLMNPRTVWXYZ0-9]{9}\b",
             0.1,
         ),
         Pattern(
-            "Personal ID (old format)",
+            "Personal ID (old format - 10 digits)",
             r"\b[0-9]{10}\b",
             0.05,
         ),
