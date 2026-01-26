@@ -440,26 +440,68 @@ def test_analyze_unsupported_entities():
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Requires Ollama with ministral-3:14b model")
-def test_integration_analyze_german_text():
-    """Integration test with real Ollama server."""
-    recognizer = MinistralOllamaRecognizer()
+def test_integration_multi_entity_extraction():
+    """
+    CRITICAL: Verify LLM returns ALL entities, not just one.
 
-    text = "Max Mustermann wohnt in der Hauptstraße 123 in Berlin."
-    results = recognizer.analyze(
-        text,
-        entities=["PERSON", "LOCATION"],
+    This test catches prompt engineering bugs where the LLM
+    only returns a single entity instead of all found entities.
+
+    Run with: poetry run pytest tests/test_ministral_ollama_recognizer.py -m integration -v
+    """
+    recognizer = MinistralOllamaRecognizer(
+        model="ministral-3:8b",
+        timeout=60.0,
     )
 
-    entity_types = [r.entity_type for r in results]
-    assert "PERSON" in entity_types or "LOCATION" in entity_types
+    text = "Max Mustermann, Tel: +49 89 12345678, wohnt in Berlin."
+    results = recognizer.analyze(
+        text,
+        entities=["PERSON", "PHONE_NUMBER", "LOCATION"],
+    )
+
+    assert len(results) >= 2, (
+        f"Expected multiple entities, got {len(results)}. "
+        "This likely indicates a prompt engineering issue where the LLM "
+        "only returns one entity instead of all."
+    )
+
+    entity_types = {r.entity_type for r in results}
+    assert "PERSON" in entity_types, "Should detect PERSON"
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Requires Ollama with ministral-3:14b model")
+def test_integration_analyze_german_clinical_text():
+    """Integration test with German clinical text sample."""
+    recognizer = MinistralOllamaRecognizer(
+        model="ministral-3:8b",
+        timeout=60.0,
+    )
+
+    text = """Patient: Max Mustermann
+Geburtsdatum: 15.03.1965
+Anschrift: Hauptstraße 42, 80331 München
+Telefon: +49 89 12345678"""
+
+    results = recognizer.analyze(
+        text,
+        entities=["PERSON", "DATE_TIME", "LOCATION", "PHONE_NUMBER"],
+    )
+
+    assert len(results) >= 3, f"Expected at least 3 entities, got {len(results)}"
+
+    entity_types = {r.entity_type for r in results}
+    assert "PERSON" in entity_types
+
+
+@pytest.mark.integration
 def test_integration_analyze_english_text():
     """Integration test with English text."""
-    recognizer = MinistralOllamaRecognizer(supported_language="en")
+    recognizer = MinistralOllamaRecognizer(
+        model="ministral-3:8b",
+        supported_language="en",
+        timeout=60.0,
+    )
 
     text = "John Smith works at Microsoft in Seattle."
     results = recognizer.analyze(
@@ -467,4 +509,4 @@ def test_integration_analyze_english_text():
         entities=["PERSON", "ORGANIZATION", "LOCATION"],
     )
 
-    assert len(results) > 0
+    assert len(results) >= 2, f"Expected at least 2 entities, got {len(results)}"

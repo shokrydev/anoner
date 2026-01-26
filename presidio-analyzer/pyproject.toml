@@ -81,3 +81,8 @@ diff-cover = "*"
 [tool.coverage.run]
 relative_files = true
 source = ["."]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (require external services like Ollama)",
+]

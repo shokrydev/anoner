@@ -23,20 +23,15 @@ logger = logging.getLogger("presidio-analyzer")
 
 
 # System prompt for PII extraction
-DEFAULT_SYSTEM_PROMPT = """You are a PII (Personally Identifiable Information) extraction system.
-Your task is to identify PII entities in the given text and return them in JSON format.
+DEFAULT_SYSTEM_PROMPT = """You are a PII extraction system. Extract ALL PII entities from the text.
 
-For each entity found, return:
-- "text": the exact text span found
-- "label": one of the requested entity types
-- "start": character offset where the entity starts
-- "end": character offset where the entity ends
+Return a JSON array with ALL entities found. Each entity needs:
+- text: exact text span
+- label: entity type
+- start: character start position
+- end: character end position
 
-Return ONLY a JSON array of objects. No explanation, no markdown, just the JSON array.
-If no entities are found, return an empty array: []
-
-Example output:
-[{"text": "John Smith", "label": "PERSON", "start": 0, "end": 10}]"""
+Return ONLY the JSON array. Find ALL entities, not just one."""
 
 
 class ExtractedEntity(BaseModel):
@@ -239,12 +234,11 @@ class MinistralOllamaRecognizer(LocalRecognizer):
     def _build_user_prompt(self, text: str, entities: List[str]) -> str:
         """Build the user prompt for entity extraction."""
         entity_list = ", ".join(entities)
-        return f"""Extract the following PII entity types from the text: {entity_list}
+        return f"""Extract ALL PII entities ({entity_list}) from this text:
 
-Text to analyze:
 {text}
 
-Return only the JSON array:"""
+JSON array with ALL entities:"""
 
     def _call_ollama(self, text: str, entities: List[str]) -> List[ExtractedEntity]:
         """
@@ -320,8 +314,13 @@ Return only the JSON array:"""
             data = json.loads(response_text)
             if isinstance(data, list):
                 return data
-            if isinstance(data, dict) and "entities" in data:
-                return data["entities"]
+            if isinstance(data, dict):
+                # Handle {"entities": [...]} format
+                if "entities" in data:
+                    return data["entities"]
+                # Handle single entity dict {"text": ..., "label": ...}
+                if "text" in data and "label" in data:
+                    return [data]
             return []
 
         except json.JSONDecodeError:
