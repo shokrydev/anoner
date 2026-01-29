@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PII-Analyse Vergleich: entlassungsbrief.txt</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #212529;
+        }
+        h1 {
+            color: #212529;
+            border-bottom: 3px solid #228be6;
+            padding-bottom: 10px;
+        }
+        h2 { color: #495057; margin-top: 30px; }
+        .meta {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .meta p { margin: 5px 0; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-card .number {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #228be6;
+        }
+        .stat-card .label {
+            color: #868e96;
+            font-size: 0.85em;
+        }
+        .stat-card.pattern .number { color: #40c057; }
+        .stat-card.ner .number { color: #7950f2; }
+        .stat-card.llm .number { color: #fd7e14; }
+        .stat-card.combined .number { color: #228be6; }
+        .legend {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 50px;
+        }
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            margin: 5px 15px 5px 0;
+            font-size: 0.9em;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 6px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .no-results {
+            color: #868e96;
+            font-style: italic;
+        }
+        .text-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+        .entity {
+            padding: 2px 4px;
+            border-radius: 3px;
+            cursor: help;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 0;
+        }
+        .tab {
+            padding: 10px 15px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+        .tab.active {
+            background: white;
+            font-weight: bold;
+        }
+        .tab.pattern { border-top: 3px solid #40c057; }
+        .tab.ner { border-top: 3px solid #7950f2; }
+        .tab.llm { border-top: 3px solid #fd7e14; }
+        .tab.combined { border-top: 3px solid #228be6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .method-info {
+            background: #f1f3f4;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        footer {
+            text-align: center;
+            color: #868e96;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <h1>PII-Analyse Vergleich</h1>
+
+    <div class="meta">
+        <p><strong>Eingabedatei:</strong> entlassungsbrief.txt</p>
+        <p><strong>Erstellt:</strong> 27.01.2026 09:28:47</p>
+        <p><strong>Textlänge:</strong> 6,063 Zeichen, ~769 Wörter</p>
+    </div>
+
+    <h2>Erkannte Entitäten pro Methode</h2>
+    <div class="stats">
+        <div class="stat-card combined">
+            <div class="number">85</div>
+            <div class="label">Kombiniert</div>
+        </div>
+        <div class="stat-card pattern">
+            <div class="number">14</div>
+            <div class="label">Regex</div>
+        </div>
+        <div class="stat-card ner">
+            <div class="number">82</div>
+            <div class="label">Nvidia-PII-GLiNER</div>
+        </div>
+        <div class="stat-card llm">
+            <div class="number">33</div>
+            <div class="label">LLM (Ministral)</div>
+        </div>
+    </div>
+
+    <h2>Ergebnisse</h2>
+    <div class="tabs">
+        <button class="tab combined active" onclick="showTab('combined')">Kombiniert</button>
+        <button class="tab pattern" onclick="showTab('pattern')">Regex (Kennnummern)</button>
+        <button class="tab ner" onclick="showTab('ner')">Nvidia-PII-GLiNER</button>
+        <button class="tab llm" onclick="showTab('llm')">LLM (Ministral)</button>
+        <button class="tab" onclick="showTab('anonymized')">Anonymisiert</button>
+        <button class="tab" onclick="showTab('original')">Original</button>
+    </div>
+
+    <div id="combined" class="tab-content active">
+        <div class="method-info">
+            <strong>Kombiniert:</strong> Kombination aller drei Methoden
+            (bei Überlappung wird höchster Score behalten)
+        </div>
+        <div class="legend"><span class="legend-item"><span class="legend-color" style="background-color: #fab005;"></span>Alter (5)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #f783ac;"></span>Datum (7)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #a9e34b;"></span>BSNR (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #69db7c;"></span>KVNR (2)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #8ce99a;"></span>LANR (2)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #ffa94d;"></span>Ausweis-Nr (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #ffc078;"></span>Steuer-ID (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #c0eb75;"></span>Telematik-ID (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #38d9a9;"></span>E-Mail (2)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #e8590c;"></span>Kennung (2)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #4dabf7;"></span>Ort (21)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #fd7e14;"></span>Beruf (6)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #b197fc;"></span>Einrichtung (4)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #ff6b6b;"></span>Person (27)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #63e6be;"></span>Telefon (3)</span></div>
+        <div class="text-panel">Entlassungsbrief
+
+Klinik für Innere Medizin
+<mark class="entity" style="background-color: #b197fc;" data-entity="ORGANIZATION" title="Einrichtung (Score: 0.85)">Universitätsklinikum München</mark>
+<mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">Marchioninistraße 15</mark>
+<mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">81377</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>
+
+<mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 0.93)">Behandelnder Arzt</mark>: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.85)">Dr. med. Heinrich-Matteo Müller</mark>
+LANR: <mark class="entity" style="background-color: #8ce99a;" data-entity="DE_LANR" title="LANR (Score: 1.00)">234567701</mark>
+<mark class="entity" style="background-color: #69db7c;" data-entity="DE_KVNR" title="KVNR (Score: 0.59)">BSNR: 720123456</mark>
+Telematik-ID: <mark class="entity" style="background-color: #c0eb75;" data-entity="DE_TELEMATIK_ID" title="Telematik-ID (Score: 0.98)">1-234567890123</mark>
+
+Patient: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Max</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark>
+Geburtsdatum: <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">15.03.1965</mark>
+Anschrift: <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.99)">Hauptstraße 42</mark>, <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">80331</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>
+Telefon: <mark class="entity" style="background-color: #63e6be;" data-entity="PHONE_NUMBER" title="Telefon (Score: 0.99)">+49 89 12345678</mark>
+E-Mail: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">max</mark>.<mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">mustermann</mark>@email.de
+Krankenversicherung: <mark class="entity" style="background-color: #b197fc;" data-entity="ORGANIZATION" title="Einrichtung (Score: 0.85)">AOK Bayern</mark>
+KVNR: <mark class="entity" style="background-color: #69db7c;" data-entity="DE_KVNR" title="KVNR (Score: 1.00)">A123456780</mark>
+Gesundheits-ID: <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">10-ABC123XYZ789</mark>
+Personalausweis-Nr: <mark class="entity" style="background-color: #ffa94d;" data-entity="DE_PERSONAL_ID" title="Ausweis-Nr (Score: 1.00)">L01X00T471</mark>
+Steuer-ID: <mark class="entity" style="background-color: #ffc078;" data-entity="DE_TAX_ID" title="Steuer-ID (Score: 1.00)">86 123 456 709</mark>
+
+Aufnahmedatum: <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">05.01.2026</mark>
+Entlassungsdatum: <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">14.01.2026</mark>
+Station: Innere Medizin 3A
+
+Diagnosen:
+1. Akuter Myokardinfarkt (STEMI) der Hinterwand (I21.1)
+2. Koronare Dreigefäßerkrankung (I25.13)
+3. Arterielle Hypertonie, gut eingestellt (I10)
+4. Diabetes mellitus Typ 2, diätetisch geführt (E11.9)
+5. Hyperlipidämie (E78.0)
+
+Anamnese:
+Der <mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.62)">58-jährige</mark> Patient <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Max</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> wurde am <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">05.01.2026</mark> mit akuten retrosternalen
+Schmerzen und Dyspnoe in unsere Notaufnahme eingeliefert. Die Beschwerden bestanden
+seit etwa <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 0.88)">3 Stunden</mark> vor Aufnahme. Der Patient berichtet über einen plötzlichen Beginn
+der Schmerzen während körperlicher Belastung beim Schneeschippen vor seinem Haus in
+der <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.99)">Hauptstraße 42</mark> in <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>. Die Schmerzen strahlten in den linken Arm und den
+Unterkiefer aus.
+
+Vorerkrankungen umfassen eine seit 10 Jahren bekannte arterielle Hypertonie, die mit
+Ramipril 5mg und Amlodipin 5mg behandelt wird. Zusätzlich besteht ein Diabetes mellitus
+Typ 2, der aktuell diätetisch geführt wird (HbA1c zuletzt 6,8%). Eine Hyperlipidämie
+ist bekannt, wurde aber vom Patienten nicht behandelt.
+
+Familienanamnese: Der Vater des Patienten, <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Friedrich</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark>, verstarb im Alter von
+<mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.77)">62</mark> Jahren an einem Herzinfarkt. Die Mutter, <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Ingrid</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> (geb. <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.92)">Schmidt</mark>), lebt und
+ist <mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.74)">82</mark> Jahre alt, leidet an Vorhofflimmern.
+
+Sozialanamnese: Herr <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> ist verheiratet mit <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Erika</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> (geb. <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.86)">Weber</mark>),
+wohnhaft ebenfalls <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">Hauptstraße 42</mark>, <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">80331</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.99)">München</mark>. Das Ehepaar hat zwei erwachsene
+Kinder: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Thomas</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> (<mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.72)">32</mark> Jahre, wohnhaft in <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.85)">Berlin</mark>) und <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Julia</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.99)">Müller</mark> geb.
+<mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> (<mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.67)">29</mark> Jahre, wohnhaft in <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.85)">Hamburg</mark>). Der Patient ist als <mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 1.00)">Bankangestellter</mark>
+berufstätig.
+
+Befunde bei Aufnahme:
+Bei Aufnahme präsentierte sich ein 58-jähriger Patient in reduziertem Allgemeinzustand.
+Vitalparameter: RR 165/95 mmHg, HF 98/min, SpO2 94% unter Raumluft, Temperatur 37,2°C.
+
+Körperliche Untersuchung:
+- Herz: Herzaktion rhythmisch, keine pathologischen Herzgeräusche
+- Lunge: Vesikuläres Atemgeräusch beidseits, keine Rasselgeräusche
+- Abdomen: Weich, kein Druckschmerz, regelrechte Darmgeräusche
+- Extremitäten: Keine peripheren Ödeme, Pulse allseits tastbar
+
+EKG bei Aufnahme: Sinusrhythmus, HF 96/min, ST-Hebungen in II, III, aVF bis 3mm,
+spiegelbildliche ST-Senkungen in I, aVL, V1-V3. Befund vereinbar mit akutem
+Hinterwandinfarkt.
+
+Laborwerte bei Aufnahme:
+- Troponin T hs: 2847 ng/L (Norm &lt;14 ng/L)
+- CK: 1234 U/L (Norm &lt;190 U/L)
+- CK-MB: 187 U/L (Norm &lt;25 U/L)
+- Kreatinin: 1,1 mg/dL
+- eGFR: 72 ml/min/1,73m²
+- Kalium: 4,2 mmol/L
+- Natrium: 141 mmol/L
+- HbA1c: 6,8%
+- LDL-Cholesterin: 165 mg/dL
+- HDL-Cholesterin: 38 mg/dL
+- Triglyceride: 210 mg/dL
+
+Therapie und Verlauf:
+Nach Diagnosestellung eines akuten STEMI wurde der Patient umgehend in das
+Herzkatheterlabor gebracht. Die Koronarangiographie zeigte einen thrombotischen
+Verschluss der rechten Koronararterie (RCA) im mittleren Segment sowie hochgradige
+Stenosen des Ramus interventricularis anterior (RIVA, 80%) und des Ramus circumflexus
+(RCX, 70%).
+
+Es erfolgte eine primäre PCI der RCA mit Implantation eines medikamentenbeschichteten
+Stents (DES, Xience Pro 3,5 x 28mm). Das angiographische Ergebnis war exzellent mit
+TIMI-3-Fluss.
+
+Die duale Thrombozytenaggregationshemmung wurde mit ASS 100mg und Ticagrelor 2x90mg
+eingeleitet. Zusätzlich erhielt der Patient eine hochdosierte Statintherapie mit
+Atorvastatin 80mg.
+
+Der postinterventionelle Verlauf gestaltete sich komplikationslos. Die
+Echokardiographie am <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 0.40)">Folgetag</mark> zeigte eine leichtgradig eingeschränkte
+linksventrikuläre Funktion (EF 48%) mit Hypokinesie der inferioren Wand.
+
+Die Mobilisation erfolgte stufenweise und problemlos. Der Patient konnte ab dem
+3. postinterventionellen Tag ohne Beschwerden auf der Station mobilisiert werden.
+
+Eine kardiologische Anschlussheilbehandlung wurde über die AOK <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.94)">Bayern</mark> beantragt und
+genehmigt. Die Rehabilitation findet statt in der <mark class="entity" style="background-color: #b197fc;" data-entity="ORGANIZATION" title="Einrichtung (Score: 0.85)">Klinik Höhenried</mark>, <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">Am Kurpark 1</mark>,
+<mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">82347</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.98)">Bernried am Starnberger See</mark>. Ansprechpartner dort ist <mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 1.00)">Dr. med.</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Sabine</mark>
+<mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Schneider</mark>, Tel: <mark class="entity" style="background-color: #63e6be;" data-entity="PHONE_NUMBER" title="Telefon (Score: 0.93)">+49 8158 24-0</mark>.
+
+Empfohlene Medikation bei Entlassung:
+1. ASS 100mg 1-0-0
+2. Ticagrelor 90mg 1-0-1 (für 12 Monate)
+3. Atorvastatin 80mg 0-0-1
+4. Ramipril 5mg 1-0-0
+5. Bisoprolol 5mg 1-0-0
+6. Pantoprazol 40mg 1-0-0
+
+Weitere Empfehlungen:
+- Nikotinkarenz (Patient hat Rauchen bereits eingestellt)
+- Mediterrane Diät, salzarme Kost
+- Regelmäßige körperliche Aktivität nach Rehabilitation
+- Gewichtsreduktion anstreben (aktuell BMI 28,3 kg/m²)
+- Blutzuckerkontrolle, ggf. medikamentöse Einstellung des Diabetes
+- Kontrolle der Blutfettwerte in 6 Wochen
+- Kardiologische Kontrolle mit Echokardiographie in 3 Monaten
+
+Der Patient wurde ausführlich über seine Erkrankung, die durchgeführte Therapie und
+die Notwendigkeit der konsequenten Medikamenteneinnahme aufgeklärt. Insbesondere
+wurde auf die Bedeutung der dualen Plättchenhemmung und die Risiken eines vorzeitigen
+Absetzens hingewiesen.
+
+Herr <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> wurde am <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">14.01.2026</mark> in gutem Allgemeinzustand und beschwerdefrei in
+die Anschlussheilbehandlung entlassen. Die Verlegung erfolgt per Krankentransport
+(Firma <mark class="entity" style="background-color: #b197fc;" data-entity="ORGANIZATION" title="Einrichtung (Score: 0.96)">Malteser München</mark>, Buchungsnummer <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">MT-2026-4711</mark>).
+
+Für Rückfragen stehe ich gerne zur Verfügung.
+
+Mit freundlichen kollegialen Grüßen,
+
+<mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 0.98)">Dr. med.</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Heinrich-Matteo</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Müller</mark>
+<mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 0.99)">Oberarzt</mark> Kardiologie
+Universitätsklinikum <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>
+Tel: <mark class="entity" style="background-color: #63e6be;" data-entity="PHONE_NUMBER" title="Telefon (Score: 0.99)">+49 89 4400-73521</mark>
+E-Mail: <mark class="entity" style="background-color: #38d9a9;" data-entity="EMAIL_ADDRESS" title="E-Mail (Score: 1.00)">hans-peter.mueller@med.uni-muenchen.de</mark>
+<mark class="entity" style="background-color: #8ce99a;" data-entity="DE_LANR" title="LANR (Score: 0.92)">LANR: 234567701</mark>
+
+Verteiler:
+- <mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 0.83)">Hausarzt</mark>: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.85)">Dr. med. Klaus Weber</mark>, Praxis für Allgemeinmedizin, <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">Leopoldstraße 123</mark>,
+  <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">80804</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>, <mark class="entity" style="background-color: #a9e34b;" data-entity="DE_BSNR" title="BSNR (Score: 0.98)">BSNR: 710987654</mark>, E-Mail: <mark class="entity" style="background-color: #38d9a9;" data-entity="EMAIL_ADDRESS" title="E-Mail (Score: 0.85)">praxis.weber@t-online.de</mark>
+- Klinik Höhenried (zur AHB)
+- Patient (Kopie)
+</div>
+    </div>
+
+    <div id="pattern" class="tab-content">
+        <div class="method-info">
+            <strong>Regex (Kennnummern):</strong> Regex-basierte Erkennung deutscher Kennnummern
+            (KVNR, LANR, BSNR, Telematik-ID, Personalausweis, Steuer-ID, SVNR, PLZ)
+        </div>
+        <div class="legend"><span class="legend-item"><span class="legend-color" style="background-color: #a9e34b;"></span>BSNR (2)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #69db7c;"></span>KVNR (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #8ce99a;"></span>LANR (2)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #ffa94d;"></span>Ausweis-Nr (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #74c0fc;"></span>PLZ (6)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #c0eb75;"></span>Telematik-ID (2)</span></div>
+        <div class="text-panel">Entlassungsbrief
+
+Klinik für Innere Medizin
+Universitätsklinikum München
+Marchioninistraße 15
+<mark class="entity" style="background-color: #74c0fc;" data-entity="DE_POSTAL_CODE" title="PLZ (Score: 0.30)">81377</mark> München
+
+Behandelnder Arzt: Dr. med. Heinrich-Matteo Müller
+LANR: <mark class="entity" style="background-color: #8ce99a;" data-entity="DE_LANR" title="LANR (Score: 1.00)">234567701</mark>
+BSNR: <mark class="entity" style="background-color: #a9e34b;" data-entity="DE_BSNR" title="BSNR (Score: 1.00)">720123456</mark>
+Telematik-ID: <mark class="entity" style="background-color: #c0eb75;" data-entity="DE_TELEMATIK_ID" title="Telematik-ID (Score: 0.75)">1-234567890123</mark>
+
+Patient: Max Mustermann
+Geburtsdatum: 15.03.1965
+Anschrift: Hauptstraße 42, <mark class="entity" style="background-color: #74c0fc;" data-entity="DE_POSTAL_CODE" title="PLZ (Score: 0.30)">80331</mark> München
+Telefon: +49 89 12345678
+E-Mail: max.mustermann@email.de
+Krankenversicherung: AOK Bayern
+KVNR: <mark class="entity" style="background-color: #69db7c;" data-entity="DE_KVNR" title="KVNR (Score: 1.00)">A123456780</mark>
+Gesundheits-ID: <mark class="entity" style="background-color: #c0eb75;" data-entity="DE_TELEMATIK_ID" title="Telematik-ID (Score: 0.75)">10-ABC123XYZ789</mark>
+Personalausweis-Nr: <mark class="entity" style="background-color: #ffa94d;" data-entity="DE_PERSONAL_ID" title="Ausweis-Nr (Score: 1.00)">L01X00T471</mark>
+Steuer-ID: 86 123 456 709
+
+Aufnahmedatum: 05.01.2026
+Entlassungsdatum: 14.01.2026
+Station: Innere Medizin 3A
+
+Diagnosen:
+1. Akuter Myokardinfarkt (STEMI) der Hinterwand (I21.1)
+2. Koronare Dreigefäßerkrankung (I25.13)
+3. Arterielle Hypertonie, gut eingestellt (I10)
+4. Diabetes mellitus Typ 2, diätetisch geführt (E11.9)
+5. Hyperlipidämie (E78.0)
+
+Anamnese:
+Der 58-jährige Patient Max Mustermann wurde am 05.01.2026 mit akuten retrosternalen
+Schmerzen und Dyspnoe in unsere Notaufnahme eingeliefert. Die Beschwerden bestanden
+seit etwa 3 Stunden vor Aufnahme. Der Patient berichtet über einen plötzlichen Beginn
+der Schmerzen während körperlicher Belastung beim Schneeschippen vor seinem Haus in
+der Hauptstraße 42 in München. Die Schmerzen strahlten in den linken Arm und den
+Unterkiefer aus.
+
+Vorerkrankungen umfassen eine seit 10 Jahren bekannte arterielle Hypertonie, die mit
+Ramipril 5mg und Amlodipin 5mg behandelt wird. Zusätzlich besteht ein Diabetes mellitus
+Typ 2, der aktuell diätetisch geführt wird (HbA1c zuletzt 6,8%). Eine Hyperlipidämie
+ist bekannt, wurde aber vom Patienten nicht behandelt.
+
+Familienanamnese: Der Vater des Patienten, Friedrich Mustermann, verstarb im Alter von
+62 Jahren an einem Herzinfarkt. Die Mutter, Ingrid Mustermann (geb. Schmidt), lebt und
+ist 82 Jahre alt, leidet an Vorhofflimmern.
+
+Sozialanamnese: Herr Mustermann ist verheiratet mit Erika Mustermann (geb. Weber),
+wohnhaft ebenfalls Hauptstraße 42, <mark class="entity" style="background-color: #74c0fc;" data-entity="DE_POSTAL_CODE" title="PLZ (Score: 0.30)">80331</mark> München. Das Ehepaar hat zwei erwachsene
+Kinder: Thomas Mustermann (32 Jahre, wohnhaft in Berlin) und Julia Müller geb.
+Mustermann (29 Jahre, wohnhaft in Hamburg). Der Patient ist als Bankangestellter
+berufstätig.
+
+Befunde bei Aufnahme:
+Bei Aufnahme präsentierte sich ein 58-jähriger Patient in reduziertem Allgemeinzustand.
+Vitalparameter: RR 165/95 mmHg, HF 98/min, SpO2 94% unter Raumluft, Temperatur 37,2°C.
+
+Körperliche Untersuchung:
+- Herz: Herzaktion rhythmisch, keine pathologischen Herzgeräusche
+- Lunge: Vesikuläres Atemgeräusch beidseits, keine Rasselgeräusche
+- Abdomen: Weich, kein Druckschmerz, regelrechte Darmgeräusche
+- Extremitäten: Keine peripheren Ödeme, Pulse allseits tastbar
+
+EKG bei Aufnahme: Sinusrhythmus, HF 96/min, ST-Hebungen in II, III, aVF bis 3mm,
+spiegelbildliche ST-Senkungen in I, aVL, V1-V3. Befund vereinbar mit akutem
+Hinterwandinfarkt.
+
+Laborwerte bei Aufnahme:
+- Troponin T hs: 2847 ng/L (Norm &lt;14 ng/L)
+- CK: 1234 U/L (Norm &lt;190 U/L)
+- CK-MB: 187 U/L (Norm &lt;25 U/L)
+- Kreatinin: 1,1 mg/dL
+- eGFR: 72 ml/min/1,73m²
+- Kalium: 4,2 mmol/L
+- Natrium: 141 mmol/L
+- HbA1c: 6,8%
+- LDL-Cholesterin: 165 mg/dL
+- HDL-Cholesterin: 38 mg/dL
+- Triglyceride: 210 mg/dL
+
+Therapie und Verlauf:
+Nach Diagnosestellung eines akuten STEMI wurde der Patient umgehend in das
+Herzkatheterlabor gebracht. Die Koronarangiographie zeigte einen thrombotischen
+Verschluss der rechten Koronararterie (RCA) im mittleren Segment sowie hochgradige
+Stenosen des Ramus interventricularis anterior (RIVA, 80%) und des Ramus circumflexus
+(RCX, 70%).
+
+Es erfolgte eine primäre PCI der RCA mit Implantation eines medikamentenbeschichteten
+Stents (DES, Xience Pro 3,5 x 28mm). Das angiographische Ergebnis war exzellent mit
+TIMI-3-Fluss.
+
+Die duale Thrombozytenaggregationshemmung wurde mit ASS 100mg und Ticagrelor 2x90mg
+eingeleitet. Zusätzlich erhielt der Patient eine hochdosierte Statintherapie mit
+Atorvastatin 80mg.
+
+Der postinterventionelle Verlauf gestaltete sich komplikationslos. Die
+Echokardiographie am Folgetag zeigte eine leichtgradig eingeschränkte
+linksventrikuläre Funktion (EF 48%) mit Hypokinesie der inferioren Wand.
+
+Die Mobilisation erfolgte stufenweise und problemlos. Der Patient konnte ab dem
+3. postinterventionellen Tag ohne Beschwerden auf der Station mobilisiert werden.
+
+Eine kardiologische Anschlussheilbehandlung wurde über die AOK Bayern beantragt und
+genehmigt. Die Rehabilitation findet statt in der Klinik Höhenried, Am Kurpark 1,
+<mark class="entity" style="background-color: #74c0fc;" data-entity="DE_POSTAL_CODE" title="PLZ (Score: 0.30)">82347</mark> Bernried am Starnberger See. Ansprechpartner dort ist Dr. med. Sabine
+Schneider, Tel: +49 8158 24-0.
+
+Empfohlene Medikation bei Entlassung:
+1. ASS 100mg 1-0-0
+2. Ticagrelor 90mg 1-0-1 (für 12 Monate)
+3. Atorvastatin 80mg 0-0-1
+4. Ramipril 5mg 1-0-0
+5. Bisoprolol 5mg 1-0-0
+6. Pantoprazol 40mg 1-0-0
+
+Weitere Empfehlungen:
+- Nikotinkarenz (Patient hat Rauchen bereits eingestellt)
+- Mediterrane Diät, salzarme Kost
+- Regelmäßige körperliche Aktivität nach Rehabilitation
+- Gewichtsreduktion anstreben (aktuell BMI 28,3 kg/m²)
+- Blutzuckerkontrolle, ggf. medikamentöse Einstellung des Diabetes
+- Kontrolle der Blutfettwerte in 6 Wochen
+- Kardiologische Kontrolle mit Echokardiographie in 3 Monaten
+
+Der Patient wurde ausführlich über seine Erkrankung, die durchgeführte Therapie und
+die Notwendigkeit der konsequenten Medikamenteneinnahme aufgeklärt. Insbesondere
+wurde auf die Bedeutung der dualen Plättchenhemmung und die Risiken eines vorzeitigen
+Absetzens hingewiesen.
+
+Herr Mustermann wurde am 14.01.2026 in gutem Allgemeinzustand und beschwerdefrei in
+die Anschlussheilbehandlung entlassen. Die Verlegung erfolgt per Krankentransport
+(Firma Malteser München, Buchungsnummer MT-2026-4711).
+
+Für Rückfragen stehe ich gerne zur Verfügung.
+
+Mit freundlichen kollegialen Grüßen,
+
+Dr. med. Heinrich-Matteo Müller
+Oberarzt Kardiologie
+Universitätsklinikum München
+Tel: +49 89 4400-<mark class="entity" style="background-color: #74c0fc;" data-entity="DE_POSTAL_CODE" title="PLZ (Score: 0.30)">73521</mark>
+E-Mail: hans-peter.mueller@med.uni-muenchen.de
+LANR: <mark class="entity" style="background-color: #8ce99a;" data-entity="DE_LANR" title="LANR (Score: 1.00)">234567701</mark>
+
+Verteiler:
+- Hausarzt: Dr. med. Klaus Weber, Praxis für Allgemeinmedizin, Leopoldstraße 123,
+  <mark class="entity" style="background-color: #74c0fc;" data-entity="DE_POSTAL_CODE" title="PLZ (Score: 0.30)">80804</mark> München, BSNR: <mark class="entity" style="background-color: #a9e34b;" data-entity="DE_BSNR" title="BSNR (Score: 1.00)">710987654</mark>, E-Mail: praxis.weber@t-online.de
+- Klinik Höhenried (zur AHB)
+- Patient (Kopie)
+</div>
+    </div>
+
+    <div id="ner" class="tab-content">
+        <div class="method-info">
+            <strong>Nvidia-PII-GLiNER:</strong> Zero-shot Transformer-Encoder-basierte PII-Erkennung
+            (Tokenweise Klassifikation)
+        </div>
+        <div class="legend"><span class="legend-item"><span class="legend-color" style="background-color: #fab005;"></span>Alter (5)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #f783ac;"></span>Datum (7)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #a9e34b;"></span>BSNR (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #69db7c;"></span>KVNR (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #8ce99a;"></span>LANR (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #ffc078;"></span>Steuer-ID (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #c0eb75;"></span>Telematik-ID (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #38d9a9;"></span>E-Mail (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #4dabf7;"></span>Ort (23)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #fd7e14;"></span>Beruf (7)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #b197fc;"></span>Einrichtung (1)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #ff6b6b;"></span>Person (30)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #63e6be;"></span>Telefon (3)</span></div>
+        <div class="text-panel">Entlassungsbrief
+
+Klinik für Innere Medizin
+Universitätsklinikum <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>
+<mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">Marchioninistraße 15</mark>
+<mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">81377</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>
+
+<mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 0.93)">Behandelnder Arzt</mark>: <mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 0.77)">Dr. med.</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Heinrich-Matteo</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Müller</mark>
+LANR: 234567701
+<mark class="entity" style="background-color: #69db7c;" data-entity="DE_KVNR" title="KVNR (Score: 0.59)">BSNR: 720123456</mark>
+Telematik-ID: <mark class="entity" style="background-color: #c0eb75;" data-entity="DE_TELEMATIK_ID" title="Telematik-ID (Score: 0.98)">1-234567890123</mark>
+
+Patient: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Max</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark>
+Geburtsdatum: <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">15.03.1965</mark>
+Anschrift: <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.99)">Hauptstraße 42</mark>, <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">80331</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>
+Telefon: <mark class="entity" style="background-color: #63e6be;" data-entity="PHONE_NUMBER" title="Telefon (Score: 0.99)">+49 89 12345678</mark>
+E-Mail: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">max</mark>.<mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">mustermann</mark>@email.de
+Krankenversicherung: AOK <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.55)">Bayern</mark>
+KVNR: A123456780
+Gesundheits-ID: 10-ABC123XYZ789
+Personalausweis-Nr: L01X00T471
+Steuer-ID: <mark class="entity" style="background-color: #ffc078;" data-entity="DE_TAX_ID" title="Steuer-ID (Score: 1.00)">86 123 456 709</mark>
+
+Aufnahmedatum: <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">05.01.2026</mark>
+Entlassungsdatum: <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">14.01.2026</mark>
+Station: Innere Medizin 3A
+
+Diagnosen:
+1. Akuter Myokardinfarkt (STEMI) der Hinterwand (I21.1)
+2. Koronare Dreigefäßerkrankung (I25.13)
+3. Arterielle Hypertonie, gut eingestellt (I10)
+4. Diabetes mellitus Typ 2, diätetisch geführt (E11.9)
+5. Hyperlipidämie (E78.0)
+
+Anamnese:
+Der <mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.62)">58-jährige</mark> Patient <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Max</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> wurde am <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">05.01.2026</mark> mit akuten retrosternalen
+Schmerzen und Dyspnoe in unsere Notaufnahme eingeliefert. Die Beschwerden bestanden
+seit etwa <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 0.88)">3 Stunden</mark> vor Aufnahme. Der Patient berichtet über einen plötzlichen Beginn
+der Schmerzen während körperlicher Belastung beim Schneeschippen vor seinem Haus in
+der <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.99)">Hauptstraße 42</mark> in <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>. Die Schmerzen strahlten in den linken Arm und den
+Unterkiefer aus.
+
+Vorerkrankungen umfassen eine seit 10 Jahren bekannte arterielle Hypertonie, die mit
+Ramipril 5mg und Amlodipin 5mg behandelt wird. Zusätzlich besteht ein Diabetes mellitus
+Typ 2, der aktuell diätetisch geführt wird (HbA1c zuletzt 6,8%). Eine Hyperlipidämie
+ist bekannt, wurde aber vom Patienten nicht behandelt.
+
+Familienanamnese: Der Vater des Patienten, <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Friedrich</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark>, verstarb im Alter von
+<mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.77)">62</mark> Jahren an einem Herzinfarkt. Die Mutter, <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Ingrid</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> (geb. <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.92)">Schmidt</mark>), lebt und
+ist <mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.74)">82</mark> Jahre alt, leidet an Vorhofflimmern.
+
+Sozialanamnese: Herr <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> ist verheiratet mit <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Erika</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> (geb. <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.86)">Weber</mark>),
+wohnhaft ebenfalls <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">Hauptstraße 42</mark>, <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">80331</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.99)">München</mark>. Das Ehepaar hat zwei erwachsene
+Kinder: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Thomas</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> (<mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.72)">32</mark> Jahre, wohnhaft in <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.67)">Berlin</mark>) und <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Julia</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.99)">Müller</mark> geb.
+<mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> (<mark class="entity" style="background-color: #fab005;" data-entity="AGE" title="Alter (Score: 0.67)">29</mark> Jahre, wohnhaft in <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.85)">Hamburg</mark>). Der Patient ist als <mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 1.00)">Bankangestellter</mark>
+berufstätig.
+
+Befunde bei Aufnahme:
+Bei Aufnahme präsentierte sich ein 58-jähriger Patient in reduziertem Allgemeinzustand.
+Vitalparameter: RR 165/95 mmHg, HF 98/min, SpO2 94% unter Raumluft, Temperatur 37,2°C.
+
+Körperliche Untersuchung:
+- Herz: Herzaktion rhythmisch, keine pathologischen Herzgeräusche
+- Lunge: Vesikuläres Atemgeräusch beidseits, keine Rasselgeräusche
+- Abdomen: Weich, kein Druckschmerz, regelrechte Darmgeräusche
+- Extremitäten: Keine peripheren Ödeme, Pulse allseits tastbar
+
+EKG bei Aufnahme: Sinusrhythmus, HF 96/min, ST-Hebungen in II, III, aVF bis 3mm,
+spiegelbildliche ST-Senkungen in I, aVL, V1-V3. Befund vereinbar mit akutem
+Hinterwandinfarkt.
+
+Laborwerte bei Aufnahme:
+- Troponin T hs: 2847 ng/L (Norm &lt;14 ng/L)
+- CK: 1234 U/L (Norm &lt;190 U/L)
+- CK-MB: 187 U/L (Norm &lt;25 U/L)
+- Kreatinin: 1,1 mg/dL
+- eGFR: 72 ml/min/1,73m²
+- Kalium: 4,2 mmol/L
+- Natrium: 141 mmol/L
+- HbA1c: 6,8%
+- LDL-Cholesterin: 165 mg/dL
+- HDL-Cholesterin: 38 mg/dL
+- Triglyceride: 210 mg/dL
+
+Therapie und Verlauf:
+Nach Diagnosestellung eines akuten STEMI wurde der Patient umgehend in das
+Herzkatheterlabor gebracht. Die Koronarangiographie zeigte einen thrombotischen
+Verschluss der rechten Koronararterie (RCA) im mittleren Segment sowie hochgradige
+Stenosen des Ramus interventricularis anterior (RIVA, 80%) und des Ramus circumflexus
+(RCX, 70%).
+
+Es erfolgte eine primäre PCI der RCA mit Implantation eines medikamentenbeschichteten
+Stents (DES, Xience Pro 3,5 x 28mm). Das angiographische Ergebnis war exzellent mit
+TIMI-3-Fluss.
+
+Die duale Thrombozytenaggregationshemmung wurde mit ASS 100mg und Ticagrelor 2x90mg
+eingeleitet. Zusätzlich erhielt der Patient eine hochdosierte Statintherapie mit
+Atorvastatin 80mg.
+
+Der postinterventionelle Verlauf gestaltete sich komplikationslos. Die
+Echokardiographie am <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 0.40)">Folgetag</mark> zeigte eine leichtgradig eingeschränkte
+linksventrikuläre Funktion (EF 48%) mit Hypokinesie der inferioren Wand.
+
+Die Mobilisation erfolgte stufenweise und problemlos. Der Patient konnte ab dem
+3. postinterventionellen Tag ohne Beschwerden auf der Station mobilisiert werden.
+
+Eine kardiologische Anschlussheilbehandlung wurde über die AOK <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.94)">Bayern</mark> beantragt und
+genehmigt. Die Rehabilitation findet statt in der Klinik Höhenried, <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">Am Kurpark 1</mark>,
+<mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">82347</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.98)">Bernried am Starnberger See</mark>. Ansprechpartner dort ist <mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 1.00)">Dr. med.</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Sabine</mark>
+<mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Schneider</mark>, Tel: <mark class="entity" style="background-color: #63e6be;" data-entity="PHONE_NUMBER" title="Telefon (Score: 0.93)">+49 8158 24-0</mark>.
+
+Empfohlene Medikation bei Entlassung:
+1. ASS 100mg 1-0-0
+2. Ticagrelor 90mg 1-0-1 (für 12 Monate)
+3. Atorvastatin 80mg 0-0-1
+4. Ramipril 5mg 1-0-0
+5. Bisoprolol 5mg 1-0-0
+6. Pantoprazol 40mg 1-0-0
+
+Weitere Empfehlungen:
+- Nikotinkarenz (Patient hat Rauchen bereits eingestellt)
+- Mediterrane Diät, salzarme Kost
+- Regelmäßige körperliche Aktivität nach Rehabilitation
+- Gewichtsreduktion anstreben (aktuell BMI 28,3 kg/m²)
+- Blutzuckerkontrolle, ggf. medikamentöse Einstellung des Diabetes
+- Kontrolle der Blutfettwerte in 6 Wochen
+- Kardiologische Kontrolle mit Echokardiographie in 3 Monaten
+
+Der Patient wurde ausführlich über seine Erkrankung, die durchgeführte Therapie und
+die Notwendigkeit der konsequenten Medikamenteneinnahme aufgeklärt. Insbesondere
+wurde auf die Bedeutung der dualen Plättchenhemmung und die Risiken eines vorzeitigen
+Absetzens hingewiesen.
+
+Herr <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Mustermann</mark> wurde am <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 1.00)">14.01.2026</mark> in gutem Allgemeinzustand und beschwerdefrei in
+die Anschlussheilbehandlung entlassen. Die Verlegung erfolgt per Krankentransport
+(Firma <mark class="entity" style="background-color: #b197fc;" data-entity="ORGANIZATION" title="Einrichtung (Score: 0.96)">Malteser München</mark>, Buchungsnummer MT-2026-4711).
+
+Für Rückfragen stehe ich gerne zur Verfügung.
+
+Mit freundlichen kollegialen Grüßen,
+
+<mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 0.98)">Dr. med.</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Heinrich-Matteo</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Müller</mark>
+<mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 0.99)">Oberarzt</mark> Kardiologie
+Universitätsklinikum <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>
+Tel: <mark class="entity" style="background-color: #63e6be;" data-entity="PHONE_NUMBER" title="Telefon (Score: 0.99)">+49 89 4400-73521</mark>
+E-Mail: <mark class="entity" style="background-color: #38d9a9;" data-entity="EMAIL_ADDRESS" title="E-Mail (Score: 1.00)">hans-peter.mueller@med.uni-muenchen.de</mark>
+<mark class="entity" style="background-color: #8ce99a;" data-entity="DE_LANR" title="LANR (Score: 0.92)">LANR: 234567701</mark>
+
+Verteiler:
+- <mark class="entity" style="background-color: #fd7e14;" data-entity="OCCUPATION" title="Beruf (Score: 0.83)">Hausarzt</mark>: Dr. med. <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Klaus</mark> <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">Weber</mark>, Praxis für Allgemeinmedizin, <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">Leopoldstraße 123</mark>,
+  <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">80804</mark> <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 1.00)">München</mark>, <mark class="entity" style="background-color: #a9e34b;" data-entity="DE_BSNR" title="BSNR (Score: 0.98)">BSNR: 710987654</mark>, E-Mail: praxis.<mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 1.00)">weber</mark>@t-online.de
+- Klinik Höhenried (zur AHB)
+- Patient (Kopie)
+</div>
+    </div>
+
+    <div id="llm" class="tab-content">
+        <div class="method-info">
+            <strong>MinistralOllamaRecognizer:</strong> LLM-basierte PII-Extraktion via Ministral 8B
+            (lokal gehostet mit Ollama)
+        </div>
+        <div class="legend"><span class="legend-item"><span class="legend-color" style="background-color: #f783ac;"></span>Datum (3)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #38d9a9;"></span>E-Mail (3)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #e8590c;"></span>Kennung (9)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #4dabf7;"></span>Ort (4)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #b197fc;"></span>Einrichtung (4)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #ff6b6b;"></span>Person (7)</span>
+<span class="legend-item"><span class="legend-color" style="background-color: #63e6be;"></span>Telefon (3)</span></div>
+        <div class="text-panel">Entlassungsbrief
+
+Klinik für Innere Medizin
+<mark class="entity" style="background-color: #b197fc;" data-entity="ORGANIZATION" title="Einrichtung (Score: 0.85)">Universitätsklinikum München</mark>
+Marchioninistraße 15
+81377 München
+
+Behandelnder Arzt: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.85)">Dr. med. Heinrich-Matteo Müller</mark>
+LANR: <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">234567701</mark>
+BSNR: <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">720123456</mark>
+Telematik-ID: <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">1-234567890123</mark>
+
+Patient: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.85)">Max Mustermann</mark>
+Geburtsdatum: <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 0.85)">15.03.1965</mark>
+Anschrift: <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.85)">Hauptstraße 42, 80331 München</mark>
+Telefon: <mark class="entity" style="background-color: #63e6be;" data-entity="PHONE_NUMBER" title="Telefon (Score: 0.85)">+49 89 12345678</mark>
+E-Mail: <mark class="entity" style="background-color: #38d9a9;" data-entity="EMAIL_ADDRESS" title="E-Mail (Score: 0.85)">max.mustermann@email.de</mark>
+Krankenversicherung: <mark class="entity" style="background-color: #b197fc;" data-entity="ORGANIZATION" title="Einrichtung (Score: 0.85)">AOK Bayern</mark>
+KVNR: <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">A123456780</mark>
+Gesundheits-ID: <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">10-ABC123XYZ789</mark>
+Personalausweis-Nr: <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">L01X00T471</mark>
+Steuer-ID: <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">86 123 456 709</mark>
+
+Aufnahmedatum: <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 0.85)">05.01.2026</mark>
+Entlassungsdatum: <mark class="entity" style="background-color: #f783ac;" data-entity="DATE_TIME" title="Datum (Score: 0.85)">14.01.2026</mark>
+Station: Innere Medizin 3A
+
+Diagnosen:
+1. Akuter Myokardinfarkt (STEMI) der Hinterwand (I21.1)
+2. Koronare Dreigefäßerkrankung (I25.13)
+3. Arterielle Hypertonie, gut eingestellt (I10)
+4. Diabetes mellitus Typ 2, diätetisch geführt (E11.9)
+5. Hyperlipidämie (E78.0)
+
+Anamnese:
+Der 58-jährige Patient Max Mustermann wurde am 05.01.2026 mit akuten retrosternalen
+Schmerzen und Dyspnoe in unsere Notaufnahme eingeliefert. Die Beschwerden bestanden
+seit etwa 3 Stunden vor Aufnahme. Der Patient berichtet über einen plötzlichen Beginn
+der Schmerzen während körperlicher Belastung beim Schneeschippen vor seinem Haus in
+der Hauptstraße 42 in München. Die Schmerzen strahlten in den linken Arm und den
+Unterkiefer aus.
+
+Vorerkrankungen umfassen eine seit 10 Jahren bekannte arterielle Hypertonie, die mit
+Ramipril 5mg und Amlodipin 5mg behandelt wird. Zusätzlich besteht ein Diabetes mellitus
+Typ 2, der aktuell diätetisch geführt wird (HbA1c zuletzt 6,8%). Eine Hyperlipidämie
+ist bekannt, wurde aber vom Patienten nicht behandelt.
+
+Familienanamnese: Der Vater des Patienten, <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.85)">Friedrich Mustermann</mark>, verstarb im Alter von
+62 Jahren an einem Herzinfarkt. Die Mutter, <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.85)">Ingrid Mustermann (geb. Schmidt)</mark>, lebt und
+ist 82 Jahre alt, leidet an Vorhofflimmern.
+
+Sozialanamnese: Herr Mustermann ist verheiratet mit <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.85)">Erika Mustermann (geb. Weber)</mark>,
+wohnhaft ebenfalls Hauptstraße 42, 80331 München. Das Ehepaar hat zwei erwachsene
+Kinder: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.85)">Thomas Mustermann</mark> (32 Jahre, wohnhaft in <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.85)">Berlin</mark>) und Julia Müller geb.
+Mustermann (29 Jahre, wohnhaft in <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.85)">Hamburg</mark>). Der Patient ist als Bankangestellter
+berufstätig.
+
+Befunde bei Aufnahme:
+Bei Aufnahme präsentierte sich ein 58-jähriger Patient in reduziertem Allgemeinzustand.
+Vitalparameter: RR 165/95 mmHg, HF 98/min, SpO2 94% unter Raumluft, Temperatur 37,2°C.
+
+Körperliche Untersuchung:
+- Herz: Herzaktion rhythmisch, keine pathologischen Herzgeräusche
+- Lunge: Vesikuläres Atemgeräusch beidseits, keine Rasselgeräusche
+- Abdomen: Weich, kein Druckschmerz, regelrechte Darmgeräusche
+- Extremitäten: Keine peripheren Ödeme, Pulse allseits tastbar
+
+EKG bei Aufnahme: Sinusrhythmus, HF 96/min, ST-Hebungen in II, III, aVF bis 3mm,
+spiegelbildliche ST-Senkungen in I, aVL, V1-V3. Befund vereinbar mit akutem
+Hinterwandinfarkt.
+
+Laborwerte bei Aufnahme:
+- Troponin T hs: 2847 ng/L (Norm &lt;14 ng/L)
+- CK: 1234 U/L (Norm &lt;190 U/L)
+- CK-MB: 187 U/L (Norm &lt;25 U/L)
+- Kreatinin: 1,1 mg/dL
+- eGFR: 72 ml/min/1,73m²
+- Kalium: 4,2 mmol/L
+- Natrium: 141 mmol/L
+- HbA1c: 6,8%
+- LDL-Cholesterin: 165 mg/dL
+- HDL-Cholesterin: 38 mg/dL
+- Triglyceride: 210 mg/dL
+
+Therapie und Verlauf:
+Nach Diagnosestellung eines akuten STEMI wurde der Patient umgehend in das
+Herzkatheterlabor gebracht. Die Koronarangiographie zeigte einen thrombotischen
+Verschluss der rechten Koronararterie (RCA) im mittleren Segment sowie hochgradige
+Stenosen des Ramus interventricularis anterior (RIVA, 80%) und des Ramus circumflexus
+(RCX, 70%).
+
+Es erfolgte eine primäre PCI der RCA mit Implantation eines medikamentenbeschichteten
+Stents (DES, Xience Pro 3,5 x 28mm). Das angiographische Ergebnis war exzellent mit
+TIMI-3-Fluss.
+
+Die duale Thrombozytenaggregationshemmung wurde mit ASS 100mg und Ticagrelor 2x90mg
+eingeleitet. Zusätzlich erhielt der Patient eine hochdosierte Statintherapie mit
+Atorvastatin 80mg.
+
+Der postinterventionelle Verlauf gestaltete sich komplikationslos. Die
+Echokardiographie am Folgetag zeigte eine leichtgradig eingeschränkte
+linksventrikuläre Funktion (EF 48%) mit Hypokinesie der inferioren Wand.
+
+Die Mobilisation erfolgte stufenweise und problemlos. Der Patient konnte ab dem
+3. postinterventionellen Tag ohne Beschwerden auf der Station mobilisiert werden.
+
+Eine kardiologische Anschlussheilbehandlung wurde über die AOK Bayern beantragt und
+genehmigt. Die Rehabilitation findet statt in der <mark class="entity" style="background-color: #b197fc;" data-entity="ORGANIZATION" title="Einrichtung (Score: 0.85)">Klinik Höhenried</mark>, Am Kurpark 1,
+82347 <mark class="entity" style="background-color: #4dabf7;" data-entity="LOCATION" title="Ort (Score: 0.85)">Bernried am Starnberger See</mark>. Ansprechpartner dort ist Dr. med. Sabine
+Schneider, Tel: <mark class="entity" style="background-color: #63e6be;" data-entity="PHONE_NUMBER" title="Telefon (Score: 0.85)">+49 8158 24-0</mark>.
+
+Empfohlene Medikation bei Entlassung:
+1. ASS 100mg 1-0-0
+2. Ticagrelor 90mg 1-0-1 (für 12 Monate)
+3. Atorvastatin 80mg 0-0-1
+4. Ramipril 5mg 1-0-0
+5. Bisoprolol 5mg 1-0-0
+6. Pantoprazol 40mg 1-0-0
+
+Weitere Empfehlungen:
+- Nikotinkarenz (Patient hat Rauchen bereits eingestellt)
+- Mediterrane Diät, salzarme Kost
+- Regelmäßige körperliche Aktivität nach Rehabilitation
+- Gewichtsreduktion anstreben (aktuell BMI 28,3 kg/m²)
+- Blutzuckerkontrolle, ggf. medikamentöse Einstellung des Diabetes
+- Kontrolle der Blutfettwerte in 6 Wochen
+- Kardiologische Kontrolle mit Echokardiographie in 3 Monaten
+
+Der Patient wurde ausführlich über seine Erkrankung, die durchgeführte Therapie und
+die Notwendigkeit der konsequenten Medikamenteneinnahme aufgeklärt. Insbesondere
+wurde auf die Bedeutung der dualen Plättchenhemmung und die Risiken eines vorzeitigen
+Absetzens hingewiesen.
+
+Herr Mustermann wurde am 14.01.2026 in gutem Allgemeinzustand und beschwerdefrei in
+die Anschlussheilbehandlung entlassen. Die Verlegung erfolgt per Krankentransport
+(Firma <mark class="entity" style="background-color: #b197fc;" data-entity="ORGANIZATION" title="Einrichtung (Score: 0.85)">Malteser München</mark>, Buchungsnummer <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">MT-2026-4711</mark>).
+
+Für Rückfragen stehe ich gerne zur Verfügung.
+
+Mit freundlichen kollegialen Grüßen,
+
+Dr. med. Heinrich-Matteo Müller
+Oberarzt Kardiologie
+Universitätsklinikum München
+Tel: <mark class="entity" style="background-color: #63e6be;" data-entity="PHONE_NUMBER" title="Telefon (Score: 0.85)">+49 89 4400-73521</mark>
+E-Mail: <mark class="entity" style="background-color: #38d9a9;" data-entity="EMAIL_ADDRESS" title="E-Mail (Score: 0.85)">hans-peter.mueller@med.uni-muenchen.de</mark>
+LANR: 234567701
+
+Verteiler:
+- Hausarzt: <mark class="entity" style="background-color: #ff6b6b;" data-entity="PERSON" title="Person (Score: 0.85)">Dr. med. Klaus Weber</mark>, Praxis für Allgemeinmedizin, Leopoldstraße 123,
+  80804 München, BSNR: <mark class="entity" style="background-color: #e8590c;" data-entity="ID" title="Kennung (Score: 0.85)">710987654</mark>, E-Mail: <mark class="entity" style="background-color: #38d9a9;" data-entity="EMAIL_ADDRESS" title="E-Mail (Score: 0.85)">praxis.weber@t-online.de</mark>
+- Klinik Höhenried (zur AHB)
+- Patient (Kopie)
+</div>
+    </div>
+
+    <div id="anonymized" class="tab-content">
+        <div class="method-info">
+            <strong>Anonymisiert:</strong> Text mit ersetzten PII-Entitäten (basierend auf kombinierter Erkennung)
+        </div>
+        <div class="text-panel">Entlassungsbrief
+
+Klinik für Innere Medizin
+[EINRICHTUNG]
+[ORT]
+[ORT]
+
+[BERUF]: [PERSON]
+LANR: [LANR]
+[KVNR]
+Telematik-ID: [TELEMATIK-ID]
+
+Patient: [PERSON]
+Geburtsdatum: [DATUM]
+Anschrift: [ORT], [ORT]
+Telefon: [TELEFON]
+E-Mail: [PERSON].[PERSON]@email.de
+Krankenversicherung: [EINRICHTUNG]
+KVNR: [KVNR]
+Gesundheits-ID: [KENNUNG]
+Personalausweis-Nr: [AUSWEIS-NR]
+Steuer-ID: [STEUER-ID]
+
+Aufnahmedatum: [DATUM]
+Entlassungsdatum: [DATUM]
+Station: Innere Medizin 3A
+
+Diagnosen:
+1. Akuter Myokardinfarkt (STEMI) der Hinterwand (I21.1)
+2. Koronare Dreigefäßerkrankung (I25.13)
+3. Arterielle Hypertonie, gut eingestellt (I10)
+4. Diabetes mellitus Typ 2, diätetisch geführt (E11.9)
+5. Hyperlipidämie (E78.0)
+
+Anamnese:
+Der [ALTER] Patient [PERSON] wurde am [DATUM] mit akuten retrosternalen
+Schmerzen und Dyspnoe in unsere Notaufnahme eingeliefert. Die Beschwerden bestanden
+seit etwa [DATUM] vor Aufnahme. Der Patient berichtet über einen plötzlichen Beginn
+der Schmerzen während körperlicher Belastung beim Schneeschippen vor seinem Haus in
+der [ORT] in [ORT]. Die Schmerzen strahlten in den linken Arm und den
+Unterkiefer aus.
+
+Vorerkrankungen umfassen eine seit 10 Jahren bekannte arterielle Hypertonie, die mit
+Ramipril 5mg und Amlodipin 5mg behandelt wird. Zusätzlich besteht ein Diabetes mellitus
+Typ 2, der aktuell diätetisch geführt wird (HbA1c zuletzt 6,8%). Eine Hyperlipidämie
+ist bekannt, wurde aber vom Patienten nicht behandelt.
+
+Familienanamnese: Der Vater des Patienten, [PERSON], verstarb im Alter von
+[ALTER] Jahren an einem Herzinfarkt. Die Mutter, [PERSON] (geb. [PERSON]), lebt und
+ist [ALTER] Jahre alt, leidet an Vorhofflimmern.
+
+Sozialanamnese: Herr [PERSON] ist verheiratet mit [PERSON] (geb. [PERSON]),
+wohnhaft ebenfalls [ORT], [ORT]. Das Ehepaar hat zwei erwachsene
+Kinder: [PERSON] ([ALTER] Jahre, wohnhaft in [ORT]) und [PERSON] geb.
+[PERSON] ([ALTER] Jahre, wohnhaft in [ORT]). Der Patient ist als [BERUF]
+berufstätig.
+
+Befunde bei Aufnahme:
+Bei Aufnahme präsentierte sich ein 58-jähriger Patient in reduziertem Allgemeinzustand.
+Vitalparameter: RR 165/95 mmHg, HF 98/min, SpO2 94% unter Raumluft, Temperatur 37,2°C.
+
+Körperliche Untersuchung:
+- Herz: Herzaktion rhythmisch, keine pathologischen Herzgeräusche
+- Lunge: Vesikuläres Atemgeräusch beidseits, keine Rasselgeräusche
+- Abdomen: Weich, kein Druckschmerz, regelrechte Darmgeräusche
+- Extremitäten: Keine peripheren Ödeme, Pulse allseits tastbar
+
+EKG bei Aufnahme: Sinusrhythmus, HF 96/min, ST-Hebungen in II, III, aVF bis 3mm,
+spiegelbildliche ST-Senkungen in I, aVL, V1-V3. Befund vereinbar mit akutem
+Hinterwandinfarkt.
+
+Laborwerte bei Aufnahme:
+- Troponin T hs: 2847 ng/L (Norm &lt;14 ng/L)
+- CK: 1234 U/L (Norm &lt;190 U/L)
+- CK-MB: 187 U/L (Norm &lt;25 U/L)
+- Kreatinin: 1,1 mg/dL
+- eGFR: 72 ml/min/1,73m²
+- Kalium: 4,2 mmol/L
+- Natrium: 141 mmol/L
+- HbA1c: 6,8%
+- LDL-Cholesterin: 165 mg/dL
+- HDL-Cholesterin: 38 mg/dL
+- Triglyceride: 210 mg/dL
+
+Therapie und Verlauf:
+Nach Diagnosestellung eines akuten STEMI wurde der Patient umgehend in das
+Herzkatheterlabor gebracht. Die Koronarangiographie zeigte einen thrombotischen
+Verschluss der rechten Koronararterie (RCA) im mittleren Segment sowie hochgradige
+Stenosen des Ramus interventricularis anterior (RIVA, 80%) und des Ramus circumflexus
+(RCX, 70%).
+
+Es erfolgte eine primäre PCI der RCA mit Implantation eines medikamentenbeschichteten
+Stents (DES, Xience Pro 3,5 x 28mm). Das angiographische Ergebnis war exzellent mit
+TIMI-3-Fluss.
+
+Die duale Thrombozytenaggregationshemmung wurde mit ASS 100mg und Ticagrelor 2x90mg
+eingeleitet. Zusätzlich erhielt der Patient eine hochdosierte Statintherapie mit
+Atorvastatin 80mg.
+
+Der postinterventionelle Verlauf gestaltete sich komplikationslos. Die
+Echokardiographie am [DATUM] zeigte eine leichtgradig eingeschränkte
+linksventrikuläre Funktion (EF 48%) mit Hypokinesie der inferioren Wand.
+
+Die Mobilisation erfolgte stufenweise und problemlos. Der Patient konnte ab dem
+3. postinterventionellen Tag ohne Beschwerden auf der Station mobilisiert werden.
+
+Eine kardiologische Anschlussheilbehandlung wurde über die AOK [ORT] beantragt und
+genehmigt. Die Rehabilitation findet statt in der [EINRICHTUNG], [ORT],
+[ORT]. Ansprechpartner dort ist [BERUF] [PERSON]
+[PERSON], Tel: [TELEFON].
+
+Empfohlene Medikation bei Entlassung:
+1. ASS 100mg 1-0-0
+2. Ticagrelor 90mg 1-0-1 (für 12 Monate)
+3. Atorvastatin 80mg 0-0-1
+4. Ramipril 5mg 1-0-0
+5. Bisoprolol 5mg 1-0-0
+6. Pantoprazol 40mg 1-0-0
+
+Weitere Empfehlungen:
+- Nikotinkarenz (Patient hat Rauchen bereits eingestellt)
+- Mediterrane Diät, salzarme Kost
+- Regelmäßige körperliche Aktivität nach Rehabilitation
+- Gewichtsreduktion anstreben (aktuell BMI 28,3 kg/m²)
+- Blutzuckerkontrolle, ggf. medikamentöse Einstellung des Diabetes
+- Kontrolle der Blutfettwerte in 6 Wochen
+- Kardiologische Kontrolle mit Echokardiographie in 3 Monaten
+
+Der Patient wurde ausführlich über seine Erkrankung, die durchgeführte Therapie und
+die Notwendigkeit der konsequenten Medikamenteneinnahme aufgeklärt. Insbesondere
+wurde auf die Bedeutung der dualen Plättchenhemmung und die Risiken eines vorzeitigen
+Absetzens hingewiesen.
+
+Herr [PERSON] wurde am [DATUM] in gutem Allgemeinzustand und beschwerdefrei in
+die Anschlussheilbehandlung entlassen. Die Verlegung erfolgt per Krankentransport
+(Firma [EINRICHTUNG], Buchungsnummer [KENNUNG]).
+
+Für Rückfragen stehe ich gerne zur Verfügung.
+
+Mit freundlichen kollegialen Grüßen,
+
+[BERUF] [PERSON]
+[BERUF] Kardiologie
+Universitätsklinikum [ORT]
+Tel: [TELEFON]
+E-Mail: [EMAIL]
+[LANR]
+
+Verteiler:
+- [BERUF]: [PERSON], Praxis für Allgemeinmedizin, [ORT],
+  [ORT], [BSNR], E-Mail: [EMAIL]
+- Klinik Höhenried (zur AHB)
+- Patient (Kopie)
+</div>
+    </div>
+
+    <div id="original" class="tab-content">
+        <div class="method-info">
+            <strong>Original:</strong> Unverarbeiteter Eingabetext
+        </div>
+        <div class="text-panel">Entlassungsbrief
+
+Klinik für Innere Medizin
+Universitätsklinikum München
+Marchioninistraße 15
+81377 München
+
+Behandelnder Arzt: Dr. med. Heinrich-Matteo Müller
+LANR: 234567701
+BSNR: 720123456
+Telematik-ID: 1-234567890123
+
+Patient: Max Mustermann
+Geburtsdatum: 15.03.1965
+Anschrift: Hauptstraße 42, 80331 München
+Telefon: +49 89 12345678
+E-Mail: max.mustermann@email.de
+Krankenversicherung: AOK Bayern
+KVNR: A123456780
+Gesundheits-ID: 10-ABC123XYZ789
+Personalausweis-Nr: L01X00T471
+Steuer-ID: 86 123 456 709
+
+Aufnahmedatum: 05.01.2026
+Entlassungsdatum: 14.01.2026
+Station: Innere Medizin 3A
+
+Diagnosen:
+1. Akuter Myokardinfarkt (STEMI) der Hinterwand (I21.1)
+2. Koronare Dreigefäßerkrankung (I25.13)
+3. Arterielle Hypertonie, gut eingestellt (I10)
+4. Diabetes mellitus Typ 2, diätetisch geführt (E11.9)
+5. Hyperlipidämie (E78.0)
+
+Anamnese:
+Der 58-jährige Patient Max Mustermann wurde am 05.01.2026 mit akuten retrosternalen
+Schmerzen und Dyspnoe in unsere Notaufnahme eingeliefert. Die Beschwerden bestanden
+seit etwa 3 Stunden vor Aufnahme. Der Patient berichtet über einen plötzlichen Beginn
+der Schmerzen während körperlicher Belastung beim Schneeschippen vor seinem Haus in
+der Hauptstraße 42 in München. Die Schmerzen strahlten in den linken Arm und den
+Unterkiefer aus.
+
+Vorerkrankungen umfassen eine seit 10 Jahren bekannte arterielle Hypertonie, die mit
+Ramipril 5mg und Amlodipin 5mg behandelt wird. Zusätzlich besteht ein Diabetes mellitus
+Typ 2, der aktuell diätetisch geführt wird (HbA1c zuletzt 6,8%). Eine Hyperlipidämie
+ist bekannt, wurde aber vom Patienten nicht behandelt.
+
+Familienanamnese: Der Vater des Patienten, Friedrich Mustermann, verstarb im Alter von
+62 Jahren an einem Herzinfarkt. Die Mutter, Ingrid Mustermann (geb. Schmidt), lebt und
+ist 82 Jahre alt, leidet an Vorhofflimmern.
+
+Sozialanamnese: Herr Mustermann ist verheiratet mit Erika Mustermann (geb. Weber),
+wohnhaft ebenfalls Hauptstraße 42, 80331 München. Das Ehepaar hat zwei erwachsene
+Kinder: Thomas Mustermann (32 Jahre, wohnhaft in Berlin) und Julia Müller geb.
+Mustermann (29 Jahre, wohnhaft in Hamburg). Der Patient ist als Bankangestellter
+berufstätig.
+
+Befunde bei Aufnahme:
+Bei Aufnahme präsentierte sich ein 58-jähriger Patient in reduziertem Allgemeinzustand.
+Vitalparameter: RR 165/95 mmHg, HF 98/min, SpO2 94% unter Raumluft, Temperatur 37,2°C.
+
+Körperliche Untersuchung:
+- Herz: Herzaktion rhythmisch, keine pathologischen Herzgeräusche
+- Lunge: Vesikuläres Atemgeräusch beidseits, keine Rasselgeräusche
+- Abdomen: Weich, kein Druckschmerz, regelrechte Darmgeräusche
+- Extremitäten: Keine peripheren Ödeme, Pulse allseits tastbar
+
+EKG bei Aufnahme: Sinusrhythmus, HF 96/min, ST-Hebungen in II, III, aVF bis 3mm,
+spiegelbildliche ST-Senkungen in I, aVL, V1-V3. Befund vereinbar mit akutem
+Hinterwandinfarkt.
+
+Laborwerte bei Aufnahme:
+- Troponin T hs: 2847 ng/L (Norm &lt;14 ng/L)
+- CK: 1234 U/L (Norm &lt;190 U/L)
+- CK-MB: 187 U/L (Norm &lt;25 U/L)
+- Kreatinin: 1,1 mg/dL
+- eGFR: 72 ml/min/1,73m²
+- Kalium: 4,2 mmol/L
+- Natrium: 141 mmol/L
+- HbA1c: 6,8%
+- LDL-Cholesterin: 165 mg/dL
+- HDL-Cholesterin: 38 mg/dL
+- Triglyceride: 210 mg/dL
+
+Therapie und Verlauf:
+Nach Diagnosestellung eines akuten STEMI wurde der Patient umgehend in das
+Herzkatheterlabor gebracht. Die Koronarangiographie zeigte einen thrombotischen
+Verschluss der rechten Koronararterie (RCA) im mittleren Segment sowie hochgradige
+Stenosen des Ramus interventricularis anterior (RIVA, 80%) und des Ramus circumflexus
+(RCX, 70%).
+
+Es erfolgte eine primäre PCI der RCA mit Implantation eines medikamentenbeschichteten
+Stents (DES, Xience Pro 3,5 x 28mm). Das angiographische Ergebnis war exzellent mit
+TIMI-3-Fluss.
+
+Die duale Thrombozytenaggregationshemmung wurde mit ASS 100mg und Ticagrelor 2x90mg
+eingeleitet. Zusätzlich erhielt der Patient eine hochdosierte Statintherapie mit
+Atorvastatin 80mg.
+
+Der postinterventionelle Verlauf gestaltete sich komplikationslos. Die
+Echokardiographie am Folgetag zeigte eine leichtgradig eingeschränkte
+linksventrikuläre Funktion (EF 48%) mit Hypokinesie der inferioren Wand.
+
+Die Mobilisation erfolgte stufenweise und problemlos. Der Patient konnte ab dem
+3. postinterventionellen Tag ohne Beschwerden auf der Station mobilisiert werden.
+
+Eine kardiologische Anschlussheilbehandlung wurde über die AOK Bayern beantragt und
+genehmigt. Die Rehabilitation findet statt in der Klinik Höhenried, Am Kurpark 1,
+82347 Bernried am Starnberger See. Ansprechpartner dort ist Dr. med. Sabine
+Schneider, Tel: +49 8158 24-0.
+
+Empfohlene Medikation bei Entlassung:
+1. ASS 100mg 1-0-0
+2. Ticagrelor 90mg 1-0-1 (für 12 Monate)
+3. Atorvastatin 80mg 0-0-1
+4. Ramipril 5mg 1-0-0
+5. Bisoprolol 5mg 1-0-0
+6. Pantoprazol 40mg 1-0-0
+
+Weitere Empfehlungen:
+- Nikotinkarenz (Patient hat Rauchen bereits eingestellt)
+- Mediterrane Diät, salzarme Kost
+- Regelmäßige körperliche Aktivität nach Rehabilitation
+- Gewichtsreduktion anstreben (aktuell BMI 28,3 kg/m²)
+- Blutzuckerkontrolle, ggf. medikamentöse Einstellung des Diabetes
+- Kontrolle der Blutfettwerte in 6 Wochen
+- Kardiologische Kontrolle mit Echokardiographie in 3 Monaten
+
+Der Patient wurde ausführlich über seine Erkrankung, die durchgeführte Therapie und
+die Notwendigkeit der konsequenten Medikamenteneinnahme aufgeklärt. Insbesondere
+wurde auf die Bedeutung der dualen Plättchenhemmung und die Risiken eines vorzeitigen
+Absetzens hingewiesen.
+
+Herr Mustermann wurde am 14.01.2026 in gutem Allgemeinzustand und beschwerdefrei in
+die Anschlussheilbehandlung entlassen. Die Verlegung erfolgt per Krankentransport
+(Firma Malteser München, Buchungsnummer MT-2026-4711).
+
+Für Rückfragen stehe ich gerne zur Verfügung.
+
+Mit freundlichen kollegialen Grüßen,
+
+Dr. med. Heinrich-Matteo Müller
+Oberarzt Kardiologie
+Universitätsklinikum München
+Tel: +49 89 4400-73521
+E-Mail: hans-peter.mueller@med.uni-muenchen.de
+LANR: 234567701
+
+Verteiler:
+- Hausarzt: Dr. med. Klaus Weber, Praxis für Allgemeinmedizin, Leopoldstraße 123,
+  80804 München, BSNR: 710987654, E-Mail: praxis.weber@t-online.de
+- Klinik Höhenried (zur AHB)
+- Patient (Kopie)
+</div>
+    </div>
+
+    <footer>
+        Generiert mit Presidio Anonymizer - Methodenvergleich
+    </footer>
+
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
