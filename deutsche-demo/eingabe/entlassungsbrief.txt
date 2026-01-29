@@ -1,0 +1,153 @@
+Entlassungsbrief
+
+Klinik für Innere Medizin
+Universitätsklinikum München
+Marchioninistraße 15
+81377 München
+
+Behandelnder Arzt: Dr. med. Heinrich-Matteo Müller
+LANR: 234567701
+BSNR: 720123456
+Telematik-ID: 1-234567890123
+
+Patient: Max Mustermann
+Geburtsdatum: 15.03.1965
+Anschrift: Hauptstraße 42, 80331 München
+Telefon: +49 89 12345678
+E-Mail: max.mustermann@email.de
+Krankenversicherung: AOK Bayern
+KVNR: A123456780
+Gesundheits-ID: 10-ABC123XYZ789
+Personalausweis-Nr: L01X00T471
+Steuer-ID: 86 123 456 709
+
+Aufnahmedatum: 05.01.2026
+Entlassungsdatum: 14.01.2026
+Station: Innere Medizin 3A
+
+Diagnosen:
+1. Akuter Myokardinfarkt (STEMI) der Hinterwand (I21.1)
+2. Koronare Dreigefäßerkrankung (I25.13)
+3. Arterielle Hypertonie, gut eingestellt (I10)
+4. Diabetes mellitus Typ 2, diätetisch geführt (E11.9)
+5. Hyperlipidämie (E78.0)
+
+Anamnese:
+Der 58-jährige Patient Max Mustermann wurde am 05.01.2026 mit akuten retrosternalen
+Schmerzen und Dyspnoe in unsere Notaufnahme eingeliefert. Die Beschwerden bestanden
+seit etwa 3 Stunden vor Aufnahme. Der Patient berichtet über einen plötzlichen Beginn
+der Schmerzen während körperlicher Belastung beim Schneeschippen vor seinem Haus in
+der Hauptstraße 42 in München. Die Schmerzen strahlten in den linken Arm und den
+Unterkiefer aus.
+
+Vorerkrankungen umfassen eine seit 10 Jahren bekannte arterielle Hypertonie, die mit
+Ramipril 5mg und Amlodipin 5mg behandelt wird. Zusätzlich besteht ein Diabetes mellitus
+Typ 2, der aktuell diätetisch geführt wird (HbA1c zuletzt 6,8%). Eine Hyperlipidämie
+ist bekannt, wurde aber vom Patienten nicht behandelt.
+
+Familienanamnese: Der Vater des Patienten, Friedrich Mustermann, verstarb im Alter von
+62 Jahren an einem Herzinfarkt. Die Mutter, Ingrid Mustermann (geb. Schmidt), lebt und
+ist 82 Jahre alt, leidet an Vorhofflimmern.
+
+Sozialanamnese: Herr Mustermann ist verheiratet mit Erika Mustermann (geb. Weber),
+wohnhaft ebenfalls Hauptstraße 42, 80331 München. Das Ehepaar hat zwei erwachsene
+Kinder: Thomas Mustermann (32 Jahre, wohnhaft in Berlin) und Julia Müller geb.
+Mustermann (29 Jahre, wohnhaft in Hamburg). Der Patient ist als Bankangestellter
+berufstätig.
+
+Befunde bei Aufnahme:
+Bei Aufnahme präsentierte sich ein 58-jähriger Patient in reduziertem Allgemeinzustand.
+Vitalparameter: RR 165/95 mmHg, HF 98/min, SpO2 94% unter Raumluft, Temperatur 37,2°C.
+
+Körperliche Untersuchung:
+- Herz: Herzaktion rhythmisch, keine pathologischen Herzgeräusche
+- Lunge: Vesikuläres Atemgeräusch beidseits, keine Rasselgeräusche
+- Abdomen: Weich, kein Druckschmerz, regelrechte Darmgeräusche
+- Extremitäten: Keine peripheren Ödeme, Pulse allseits tastbar
+
+EKG bei Aufnahme: Sinusrhythmus, HF 96/min, ST-Hebungen in II, III, aVF bis 3mm,
+spiegelbildliche ST-Senkungen in I, aVL, V1-V3. Befund vereinbar mit akutem
+Hinterwandinfarkt.
+
+Laborwerte bei Aufnahme:
+- Troponin T hs: 2847 ng/L (Norm <14 ng/L)
+- CK: 1234 U/L (Norm <190 U/L)
+- CK-MB: 187 U/L (Norm <25 U/L)
+- Kreatinin: 1,1 mg/dL
+- eGFR: 72 ml/min/1,73m²
+- Kalium: 4,2 mmol/L
+- Natrium: 141 mmol/L
+- HbA1c: 6,8%
+- LDL-Cholesterin: 165 mg/dL
+- HDL-Cholesterin: 38 mg/dL
+- Triglyceride: 210 mg/dL
+
+Therapie und Verlauf:
+Nach Diagnosestellung eines akuten STEMI wurde der Patient umgehend in das
+Herzkatheterlabor gebracht. Die Koronarangiographie zeigte einen thrombotischen
+Verschluss der rechten Koronararterie (RCA) im mittleren Segment sowie hochgradige
+Stenosen des Ramus interventricularis anterior (RIVA, 80%) und des Ramus circumflexus
+(RCX, 70%).
+
+Es erfolgte eine primäre PCI der RCA mit Implantation eines medikamentenbeschichteten
+Stents (DES, Xience Pro 3,5 x 28mm). Das angiographische Ergebnis war exzellent mit
+TIMI-3-Fluss.
+
+Die duale Thrombozytenaggregationshemmung wurde mit ASS 100mg und Ticagrelor 2x90mg
+eingeleitet. Zusätzlich erhielt der Patient eine hochdosierte Statintherapie mit
+Atorvastatin 80mg.
+
+Der postinterventionelle Verlauf gestaltete sich komplikationslos. Die
+Echokardiographie am Folgetag zeigte eine leichtgradig eingeschränkte
+linksventrikuläre Funktion (EF 48%) mit Hypokinesie der inferioren Wand.
+
+Die Mobilisation erfolgte stufenweise und problemlos. Der Patient konnte ab dem
+3. postinterventionellen Tag ohne Beschwerden auf der Station mobilisiert werden.
+
+Eine kardiologische Anschlussheilbehandlung wurde über die AOK Bayern beantragt und
+genehmigt. Die Rehabilitation findet statt in der Klinik Höhenried, Am Kurpark 1,
+82347 Bernried am Starnberger See. Ansprechpartner dort ist Dr. med. Sabine
+Schneider, Tel: +49 8158 24-0.
+
+Empfohlene Medikation bei Entlassung:
+1. ASS 100mg 1-0-0
+2. Ticagrelor 90mg 1-0-1 (für 12 Monate)
+3. Atorvastatin 80mg 0-0-1
+4. Ramipril 5mg 1-0-0
+5. Bisoprolol 5mg 1-0-0
+6. Pantoprazol 40mg 1-0-0
+
+Weitere Empfehlungen:
+- Nikotinkarenz (Patient hat Rauchen bereits eingestellt)
+- Mediterrane Diät, salzarme Kost
+- Regelmäßige körperliche Aktivität nach Rehabilitation
+- Gewichtsreduktion anstreben (aktuell BMI 28,3 kg/m²)
+- Blutzuckerkontrolle, ggf. medikamentöse Einstellung des Diabetes
+- Kontrolle der Blutfettwerte in 6 Wochen
+- Kardiologische Kontrolle mit Echokardiographie in 3 Monaten
+
+Der Patient wurde ausführlich über seine Erkrankung, die durchgeführte Therapie und
+die Notwendigkeit der konsequenten Medikamenteneinnahme aufgeklärt. Insbesondere
+wurde auf die Bedeutung der dualen Plättchenhemmung und die Risiken eines vorzeitigen
+Absetzens hingewiesen.
+
+Herr Mustermann wurde am 14.01.2026 in gutem Allgemeinzustand und beschwerdefrei in
+die Anschlussheilbehandlung entlassen. Die Verlegung erfolgt per Krankentransport
+(Firma Malteser München, Buchungsnummer MT-2026-4711).
+
+Für Rückfragen stehe ich gerne zur Verfügung.
+
+Mit freundlichen kollegialen Grüßen,
+
+Dr. med. Heinrich-Matteo Müller
+Oberarzt Kardiologie
+Universitätsklinikum München
+Tel: +49 89 4400-73521
+E-Mail: heinrich-matteo.mueller@med.uni-muenchen.de
+LANR: 234567701
+
+Verteiler:
+- Hausarzt: Dr. med. Klaus Weber, Praxis für Allgemeinmedizin, Leopoldstraße 123,
+  80804 München, BSNR: 710987654, E-Mail: praxis.weber@t-online.de
+- Klinik Höhenried (zur AHB)
+- Patient (Kopie)
