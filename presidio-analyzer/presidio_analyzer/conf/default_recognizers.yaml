@@ -311,7 +311,7 @@ recognizers:
     type: predefined
     enabled: false
 
-  - name: MinistralOllamaRecognizer
+  - name: OllamaNERecognizer
     supported_languages:
     - de
     - en

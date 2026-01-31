@@ -106,8 +106,8 @@ from .generic.url_recognizer import UrlRecognizer
 
 # NER recognizers
 from .ner.gliner_recognizer import GLiNERRecognizer
-from .ner.ministral_ollama_recognizer import MinistralOllamaRecognizer
 from .ner.nvidia_gliner_pii_recognizer import NvidiaGLiNERPIIRecognizer
+from .ner.ollama_ne_recognizer import OllamaNERecognizer
 
 # NLP Engine recognizers
 from .nlp_engine_recognizers.spacy_recognizer import SpacyRecognizer
@@ -188,8 +188,8 @@ __all__ = [
     "ItPassportRecognizer",
     "InPanRecognizer",
     "GLiNERRecognizer",
-    "MinistralOllamaRecognizer",
     "NvidiaGLiNERPIIRecognizer",
+    "OllamaNERecognizer",
     "PlPeselRecognizer",
     "AzureAILanguageRecognizer",
     "InAadhaarRecognizer",
