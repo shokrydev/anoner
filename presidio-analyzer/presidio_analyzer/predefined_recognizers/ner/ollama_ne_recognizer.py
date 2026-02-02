@@ -11,7 +11,7 @@ Requires Ollama to be running:
 import json
 import logging
 import re
-from typing import List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
@@ -177,6 +177,8 @@ class OllamaNERecognizer(LMRecognizer):
         min_score: float = 0.4,
         labels_to_ignore: Optional[List[str]] = None,
         name: str = "OllamaNERecognizer",
+        system_prompt: Optional[str] = None,
+        language_additions: Optional[Dict[str, str]] = None,
     ):
         """
         Initialize the Ollama recognizer.
@@ -190,6 +192,11 @@ class OllamaNERecognizer(LMRecognizer):
         :param min_score: Minimum score threshold for results
         :param labels_to_ignore: Entity labels to skip
         :param name: Recognizer name
+        :param system_prompt: Custom system prompt (defaults to BASE_SYSTEM_PROMPT).
+            Use this to customize the core extraction instructions.
+        :param language_additions: Dict mapping language codes to additional prompt
+            text (e.g., {"de": "German-specific patterns..."}). Defaults to
+            built-in GERMAN_PROMPT_ADDITIONS for "de".
         """
         if httpx is None:
             raise ImportError(
@@ -207,6 +214,12 @@ class OllamaNERecognizer(LMRecognizer):
 
         self.client: Optional["httpx.Client"] = None
         self._supported_language = supported_language
+
+        # Configurable prompts with sensible defaults
+        self._system_prompt = system_prompt if system_prompt is not None else BASE_SYSTEM_PROMPT
+        self._language_additions = language_additions if language_additions is not None else {
+            "de": GERMAN_PROMPT_ADDITIONS,
+        }
 
         super().__init__(
             supported_entities=supported_entities or self.DEFAULT_SUPPORTED_ENTITIES,
@@ -253,10 +266,14 @@ class OllamaNERecognizer(LMRecognizer):
             self.load()
 
     def _build_system_prompt(self) -> str:
-        """Build the system prompt, adding language-specific examples."""
-        prompt = BASE_SYSTEM_PROMPT
-        if self._supported_language == "de":
-            prompt += GERMAN_PROMPT_ADDITIONS
+        """Build the system prompt, adding language-specific examples.
+
+        Uses the configured system_prompt and language_additions, or falls
+        back to built-in defaults if not configured.
+        """
+        prompt = self._system_prompt
+        if self._supported_language in self._language_additions:
+            prompt += self._language_additions[self._supported_language]
         return prompt
 
     def _build_user_prompt(self, text: str, entities: List[str]) -> str:
