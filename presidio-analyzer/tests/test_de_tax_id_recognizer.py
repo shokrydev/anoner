@@ -22,10 +22,15 @@ def entities():
         ("86095742719", 1, ((0, 11),), ((0.2, 1.0),)),
         ("11234567808", 1, ((0, 11),), ((0.2, 1.0),)),
 
-        # With separators
+        # With separators (3-3-3-2 format)
         ("860 957 427 19", 1, ((0, 14),), ((0.3, 1.0),)),
         ("860-957-427-19", 1, ((0, 14),), ((0.3, 1.0),)),
         ("860/957/427/19", 1, ((0, 14),), ((0.3, 1.0),)),
+
+        # With separators (2-3-3-3 format, as seen in official documents)
+        ("86 095 742 719", 1, ((0, 14),), ((0.3, 1.0),)),
+        ("86-095-742-719", 1, ((0, 14),), ((0.3, 1.0),)),
+        ("86/095/742/719", 1, ((0, 14),), ((0.3, 1.0),)),
 
         # With surrounding text
         ("My Tax ID is 86095742719 here", 1, ((13, 24),), ((0.2, 1.0),)),
@@ -107,5 +112,5 @@ def test_recognizer_initialization():
     recognizer = DeTaxIdRecognizer()
     assert recognizer.supported_entities == ["DE_TAX_ID"]
     assert recognizer.supported_language == "de"
-    assert len(recognizer.patterns) == 2
+    assert len(recognizer.patterns) == 3
     assert len(recognizer.context) > 0

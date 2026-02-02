@@ -2,7 +2,7 @@
 """
 Demo: Vergleich der Erkennungsmethoden für deutsche klinische Texte.
 
-Zeigt separat: Pattern-only vs. NER-only vs. LLM-only vs. Kombiniert
+Zeigt separat: Pattern-only vs. NER-only vs. LLM-only vs. Regex+LLM
 
 Siehe README.md für Voraussetzungen und Verwendung.
 """
@@ -11,7 +11,6 @@ import html
 import logging
 import sys
 import warnings
-from datetime import datetime
 from pathlib import Path
 
 # Suppress noisy warnings
@@ -30,7 +29,7 @@ from presidio_anonymizer.entities import OperatorConfig
 
 # Import recognizers
 from presidio_analyzer.predefined_recognizers.ner import (
-    MinistralOllamaRecognizer,
+    OllamaNERecognizer,
     NvidiaGLiNERPIIRecognizer,
 )
 
@@ -46,6 +45,10 @@ from presidio_analyzer.predefined_recognizers import (
     DeTelematikIdRecognizer,
 )
 
+# Import utils for metrics and report generation
+from utils.metrics import AnnotatedEntity, evaluate_results, load_ground_truth, get_missed_entities
+from utils.report_template import generate_report
+
 # Default test input file
 DEFAULT_INPUT_FILE = Path(__file__).parent / "eingabe" / "entlassungsbrief.txt"
 
@@ -56,6 +59,16 @@ ENTITIES = [
     "DE_KVNR", "DE_LANR", "DE_BSNR", "DE_TELEMATIK_ID",
     "DE_PERSONAL_ID", "DE_TAX_ID", "DE_SOCIAL_SECURITY", "DE_POSTAL_CODE",
 ]
+
+# Entity domains for fair evaluation
+PATTERN_DOMAIN = {
+    "DE_KVNR", "DE_LANR", "DE_BSNR", "DE_TELEMATIK_ID",
+    "DE_PERSONAL_ID", "DE_TAX_ID", "DE_SOCIAL_SECURITY", "DE_POSTAL_CODE",
+}
+LLM_DOMAIN = {
+    "PERSON", "LOCATION", "ORGANIZATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
+    "DATE_TIME", "AGE", "OCCUPATION", "ID",
+}
 
 # Entity type to color mapping for HTML report
 ENTITY_COLORS = {
@@ -159,20 +172,23 @@ def setup_ner_analyzer(nlp_engine) -> AnalyzerEngine:
     )
 
 
-def setup_llm_analyzer(nlp_engine) -> AnalyzerEngine:
-    """Set up analyzer with only MinistralOllamaRecognizer."""
+def setup_llm_analyzer(nlp_engine, model: str = "ministral-3:8b") -> AnalyzerEngine:
+    """Set up analyzer with only OllamaNERecognizer."""
     registry = RecognizerRegistry(supported_languages=["de"])
 
+    # Larger models need more time
+    timeout = 300.0 if "14b" in model else 120.0
+
     try:
-        ministral_recognizer = MinistralOllamaRecognizer(
+        ollama_recognizer = OllamaNERecognizer(
             ollama_url="http://localhost:11434",
-            model="ministral-3:8b",
+            model=model,
             supported_language="de",
-            timeout=120.0,
+            timeout=timeout,
         )
-        registry.add_recognizer(ministral_recognizer)
+        registry.add_recognizer(ollama_recognizer)
     except Exception as e:
-        print(f"  ✗ MinistralOllamaRecognizer failed: {e}")
+        print(f"  ✗ OllamaNERecognizer failed: {e}")
 
     return AnalyzerEngine(
         registry=registry,
@@ -288,282 +304,27 @@ def build_legend(results: list) -> str:
     return "\n".join(items)
 
 
-def generate_comparison_html_report(
-    text: str,
-    pattern_results: list,
-    ner_results: list,
-    llm_results: list,
-    combined_results: list,
-    anonymized_text: str,
-    input_file: Path,
-) -> str:
-    """Generate HTML report comparing all recognition methods."""
-
-    # Build highlighted texts
-    pattern_highlighted = build_highlighted_text(text, pattern_results)
-    ner_highlighted = build_highlighted_text(text, ner_results)
-    llm_highlighted = build_highlighted_text(text, llm_results)
-    combined_highlighted = build_highlighted_text(text, combined_results)
-
-    # Build legends
-    pattern_legend = build_legend(pattern_results)
-    ner_legend = build_legend(ner_results)
-    llm_legend = build_legend(llm_results)
-    combined_legend = build_legend(combined_results)
-
-    # Counts
-    pattern_count = len(remove_overlapping_entities(pattern_results))
-    ner_count = len(remove_overlapping_entities(ner_results))
-    llm_count = len(remove_overlapping_entities(llm_results))
-    combined_count = len(remove_overlapping_entities(combined_results))
-
-    report_html = f'''<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PII-Analyse Vergleich: {html.escape(input_file.name)}</title>
-    <style>
-        * {{ box-sizing: border-box; }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f8f9fa;
-            color: #212529;
-        }}
-        h1 {{
-            color: #212529;
-            border-bottom: 3px solid #228be6;
-            padding-bottom: 10px;
-        }}
-        h2 {{ color: #495057; margin-top: 30px; }}
-        .meta {{
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }}
-        .meta p {{ margin: 5px 0; }}
-        .stats {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }}
-        .stat-card {{
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }}
-        .stat-card .number {{
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #228be6;
-        }}
-        .stat-card .label {{
-            color: #868e96;
-            font-size: 0.85em;
-        }}
-        .stat-card.pattern .number {{ color: #40c057; }}
-        .stat-card.ner .number {{ color: #7950f2; }}
-        .stat-card.llm .number {{ color: #fd7e14; }}
-        .stat-card.combined .number {{ color: #228be6; }}
-        .legend {{
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            min-height: 50px;
-        }}
-        .legend-item {{
-            display: inline-flex;
-            align-items: center;
-            margin: 5px 15px 5px 0;
-            font-size: 0.9em;
-        }}
-        .legend-color {{
-            width: 16px;
-            height: 16px;
-            border-radius: 3px;
-            margin-right: 6px;
-            border: 1px solid rgba(0,0,0,0.1);
-        }}
-        .no-results {{
-            color: #868e96;
-            font-style: italic;
-        }}
-        .text-panel {{
-            background: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            white-space: pre-wrap;
-            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-            font-size: 0.9em;
-            line-height: 1.8;
-        }}
-        .entity {{
-            padding: 2px 4px;
-            border-radius: 3px;
-            cursor: help;
-            border: 1px solid rgba(0,0,0,0.1);
-        }}
-        .tabs {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-bottom: 0;
-        }}
-        .tab {{
-            padding: 10px 15px;
-            background: #e9ecef;
-            border: none;
-            border-radius: 8px 8px 0 0;
-            cursor: pointer;
-            font-size: 0.95em;
-        }}
-        .tab.active {{
-            background: white;
-            font-weight: bold;
-        }}
-        .tab.pattern {{ border-top: 3px solid #40c057; }}
-        .tab.ner {{ border-top: 3px solid #7950f2; }}
-        .tab.llm {{ border-top: 3px solid #fd7e14; }}
-        .tab.combined {{ border-top: 3px solid #228be6; }}
-        .tab-content {{ display: none; }}
-        .tab-content.active {{ display: block; }}
-        .method-info {{
-            background: #f1f3f4;
-            padding: 10px 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            font-size: 0.9em;
-        }}
-        footer {{
-            text-align: center;
-            color: #868e96;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #dee2e6;
-        }}
-    </style>
-</head>
-<body>
-    <h1>PII-Analyse Vergleich</h1>
-
-    <div class="meta">
-        <p><strong>Eingabedatei:</strong> {html.escape(str(input_file.name))}</p>
-        <p><strong>Erstellt:</strong> {datetime.now().strftime("%d.%m.%Y %H:%M:%S")}</p>
-        <p><strong>Textlänge:</strong> {len(text):,} Zeichen, ~{len(text.split()):,} Wörter</p>
-    </div>
-
-    <h2>Erkannte Entitäten pro Methode</h2>
-    <div class="stats">
-        <div class="stat-card combined">
-            <div class="number">{combined_count}</div>
-            <div class="label">Kombiniert</div>
-        </div>
-        <div class="stat-card pattern">
-            <div class="number">{pattern_count}</div>
-            <div class="label">Regex</div>
-        </div>
-        <div class="stat-card ner">
-            <div class="number">{ner_count}</div>
-            <div class="label">Nvidia-PII-GLiNER</div>
-        </div>
-        <div class="stat-card llm">
-            <div class="number">{llm_count}</div>
-            <div class="label">LLM (Ministral)</div>
-        </div>
-    </div>
-
-    <h2>Ergebnisse</h2>
-    <div class="tabs">
-        <button class="tab combined active" onclick="showTab('combined')">Kombiniert</button>
-        <button class="tab pattern" onclick="showTab('pattern')">Regex (Kennnummern)</button>
-        <button class="tab ner" onclick="showTab('ner')">Nvidia-PII-GLiNER</button>
-        <button class="tab llm" onclick="showTab('llm')">LLM (Ministral)</button>
-        <button class="tab" onclick="showTab('anonymized')">Anonymisiert</button>
-        <button class="tab" onclick="showTab('original')">Original</button>
-    </div>
-
-    <div id="combined" class="tab-content active">
-        <div class="method-info">
-            <strong>Kombiniert:</strong> Kombination aller drei Methoden
-            (bei Überlappung wird höchster Score behalten)
-        </div>
-        <div class="legend">{combined_legend}</div>
-        <div class="text-panel">{combined_highlighted}</div>
-    </div>
-
-    <div id="pattern" class="tab-content">
-        <div class="method-info">
-            <strong>Regex (Kennnummern):</strong> Regex-basierte Erkennung deutscher Kennnummern
-            (KVNR, LANR, BSNR, Telematik-ID, Personalausweis, Steuer-ID, SVNR, PLZ)
-        </div>
-        <div class="legend">{pattern_legend}</div>
-        <div class="text-panel">{pattern_highlighted}</div>
-    </div>
-
-    <div id="ner" class="tab-content">
-        <div class="method-info">
-            <strong>Nvidia-PII-GLiNER:</strong> Zero-shot Transformer-Encoder-basierte PII-Erkennung
-            (Tokenweise Klassifikation)
-        </div>
-        <div class="legend">{ner_legend}</div>
-        <div class="text-panel">{ner_highlighted}</div>
-    </div>
-
-    <div id="llm" class="tab-content">
-        <div class="method-info">
-            <strong>MinistralOllamaRecognizer:</strong> LLM-basierte PII-Extraktion via Ministral 8B
-            (lokal gehostet mit Ollama)
-        </div>
-        <div class="legend">{llm_legend}</div>
-        <div class="text-panel">{llm_highlighted}</div>
-    </div>
-
-    <div id="anonymized" class="tab-content">
-        <div class="method-info">
-            <strong>Anonymisiert:</strong> Text mit ersetzten PII-Entitäten (basierend auf kombinierter Erkennung)
-        </div>
-        <div class="text-panel">{html.escape(anonymized_text)}</div>
-    </div>
-
-    <div id="original" class="tab-content">
-        <div class="method-info">
-            <strong>Original:</strong> Unverarbeiteter Eingabetext
-        </div>
-        <div class="text-panel">{html.escape(text)}</div>
-    </div>
-
-    <footer>
-        Generiert mit Presidio Anonymizer - Methodenvergleich
-    </footer>
-
-    <script>
-        function showTab(tabId) {{
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
-        }}
-    </script>
-</body>
-</html>'''
-
-    return report_html
+def results_to_annotated_entities(results: list, text: str) -> list[AnnotatedEntity]:
+    """Convert Presidio results to AnnotatedEntity list for metrics calculation."""
+    filtered = remove_overlapping_entities(results)
+    return [
+        AnnotatedEntity(
+            start=r.start,
+            end=r.end,
+            entity_type=r.entity_type,
+            text=text[r.start:r.end],
+        )
+        for r in filtered
+    ]
 
 
-def print_results_summary(name: str, results: list) -> None:
-    """Print a summary of detected entities."""
+def print_results_summary(
+    name: str,
+    results: list,
+    metrics: dict | None = None,
+    domain_metrics: dict | None = None,
+) -> None:
+    """Print a summary of detected entities with optional metrics."""
     filtered = remove_overlapping_entities(results)
     by_type = {}
     for r in filtered:
@@ -575,26 +336,44 @@ def print_results_summary(name: str, results: list) -> None:
     for entity_type, entities in sorted(by_type.items()):
         print(f"    - {entity_type}: {len(entities)}")
 
+    if metrics:
+        print(f"    → Gesamt: P={metrics['precision']:.1%} R={metrics['recall']:.1%} F2={metrics['f_beta']:.1%}")
 
-def main(input_file: Path = DEFAULT_INPUT_FILE):
+    if domain_metrics:
+        for domain_name, m in domain_metrics.items():
+            if m and m['tp'] + m['fp'] + m['fn'] > 0:
+                print(f"    → {domain_name}: P={m['precision']:.1%} R={m['recall']:.1%} F2={m['f_beta']:.1%}")
+
+
+def main(input_file: Path = DEFAULT_INPUT_FILE, overlap_threshold: float = 0.5, model: str = "ministral-3:8b"):
     """Main function to run the comparison pipeline."""
     print("\n" + "=" * 60)
     print("GERMAN CLINICAL TEXT - METHODEN-VERGLEICH")
     print("=" * 60)
 
     # Load input text
-    print(f"\n[1/6] Lade Text: {input_file.name}")
+    print(f"\n[1/7] Lade Text: {input_file.name}")
     text = load_input_text(input_file)
     print(f"      {len(text)} Zeichen, ~{len(text.split())} Wörter")
 
+    # Load ground truth annotations if available
+    annotations_file = input_file.with_name(input_file.stem + "_annotations.json")
+    ground_truth = None
+    if annotations_file.exists():
+        print(f"\n[2/7] Lade Ground Truth: {annotations_file.name}")
+        ground_truth = load_ground_truth(annotations_file)
+        print(f"      {len(ground_truth)} annotierte Entitäten (IoU threshold: {overlap_threshold})")
+    else:
+        print(f"\n[2/7] Keine Ground Truth gefunden ({annotations_file.name})")
+
     # Setup NLP engine (shared)
-    print("\n[2/6] Lade SpaCy NLP engine...")
+    print("\n[3/7] Lade SpaCy NLP engine...")
     nlp_engine = get_nlp_engine()
     if nlp_engine:
         print("      ✓ de_core_news_sm geladen")
 
     # Setup analyzers
-    print("\n[3/6] Erstelle Analyzer...")
+    print("\n[4/7] Erstelle Analyzer...")
     print("      Pattern-Analyzer...")
     pattern_analyzer = setup_pattern_analyzer(nlp_engine)
     print("      ✓ Pattern-Analyzer bereit (8 deutsche Recognizer)")
@@ -603,32 +382,63 @@ def main(input_file: Path = DEFAULT_INPUT_FILE):
     ner_analyzer = setup_ner_analyzer(nlp_engine)
     print("      ✓ NER-Analyzer bereit")
 
-    print("      LLM-Analyzer (Ministral)...")
-    llm_analyzer = setup_llm_analyzer(nlp_engine)
+    print(f"      LLM-Analyzer ({model})...")
+    llm_analyzer = setup_llm_analyzer(nlp_engine, model=model)
     print("      ✓ LLM-Analyzer bereit")
 
     # Analyze with each method
-    print("\n[4/6] Analysiere Text...")
+    print("\n[5/7] Analysiere Text...")
+
+    # Helper to calculate metrics if ground truth exists
+    def get_metrics(results: list) -> tuple[dict | None, dict | None]:
+        """Returns (overall_metrics, domain_metrics_dict)."""
+        if not ground_truth:
+            return None, None
+
+        detected = results_to_annotated_entities(results, text)
+        overall = evaluate_results(detected, ground_truth, overlap_threshold=overlap_threshold)
+
+        # Domain-specific metrics
+        pattern_gt = [g for g in ground_truth if g.entity_type in PATTERN_DOMAIN]
+        llm_gt = [g for g in ground_truth if g.entity_type in LLM_DOMAIN]
+        pattern_det = [d for d in detected if d.entity_type in PATTERN_DOMAIN]
+        llm_det = [d for d in detected if d.entity_type in LLM_DOMAIN]
+
+        domain_metrics = {}
+        if pattern_gt:
+            domain_metrics["Pattern-Domain"] = evaluate_results(
+                pattern_det, pattern_gt, overlap_threshold=overlap_threshold
+            )
+        if llm_gt:
+            domain_metrics["LLM-Domain"] = evaluate_results(
+                llm_det, llm_gt, overlap_threshold=overlap_threshold
+            )
+
+        return overall, domain_metrics
 
     print("\n      Pattern-Erkennung...")
     pattern_results = analyze_text(pattern_analyzer, text)
-    print_results_summary("Pattern", pattern_results)
+    pattern_metrics, pattern_domain = get_metrics(pattern_results)
+    print_results_summary("Pattern", pattern_results, pattern_metrics, pattern_domain)
 
     print("\n      NER-Erkennung (GLiNER)...")
     ner_results = analyze_text(ner_analyzer, text)
-    print_results_summary("NER", ner_results)
+    ner_metrics, ner_domain = get_metrics(ner_results)
+    print_results_summary("NER", ner_results, ner_metrics, ner_domain)
 
     print("\n      LLM-Erkennung (Ministral)...")
     llm_results = analyze_text(llm_analyzer, text)
-    print_results_summary("LLM", llm_results)
+    llm_metrics, llm_domain = get_metrics(llm_results)
+    print_results_summary("LLM", llm_results, llm_metrics, llm_domain)
 
-    # Merge results
-    print("\n[5/6] Kombiniere Ergebnisse...")
-    combined_results = merge_results([pattern_results, ner_results, llm_results])
-    print_results_summary("Kombiniert", combined_results)
+    # Merge results (Pattern + LLM only, GLiNER excluded due to low precision)
+    print("\n[6/7] Kombiniere Ergebnisse (Regex+LLM)...")
+    combined_results = merge_results([pattern_results, llm_results])
+    combined_metrics, combined_domain = get_metrics(combined_results)
+    print_results_summary("Regex+LLM", combined_results, combined_metrics, combined_domain)
 
     # Anonymize
-    print("\n[6/6] Anonymisiere Text...")
+    print("\n[7/7] Anonymisiere Text...")
     anonymizer = AnonymizerEngine()
     operators = get_anonymization_operators()
 
@@ -645,17 +455,66 @@ def main(input_file: Path = DEFAULT_INPUT_FILE):
     output_dir = Path(__file__).parent / "ausgabe"
     output_dir.mkdir(exist_ok=True)
 
+    # Build metrics dict for report (if ground truth available)
+    metrics_for_report = None
+    missed_legend = ""
+    missed_highlighted = ""
+
+    if ground_truth:
+        metrics_for_report = {
+            "Regex (Pattern)": pattern_metrics,
+            "Nvidia-PII-GLiNER": ner_metrics,
+            f"LLM ({model})": llm_metrics,
+            "Regex+LLM": combined_metrics,
+        }
+
+        # Calculate missed entities (false negatives) for the combined approach
+        detected_entities = results_to_annotated_entities(combined_results, text)
+        missed_entities = get_missed_entities(detected_entities, ground_truth, overlap_threshold)
+
+        # Convert missed entities to RecognizerResult-like format for highlighting
+        from presidio_analyzer import RecognizerResult
+        missed_as_results = [
+            RecognizerResult(
+                entity_type=e.entity_type,
+                start=e.start,
+                end=e.end,
+                score=1.0,
+            )
+            for e in missed_entities
+        ]
+        missed_legend = build_legend(missed_as_results)
+        missed_highlighted = build_highlighted_text(text, missed_as_results)
+
     # Generate and save comparison HTML report
-    html_report = generate_comparison_html_report(
-        text=text,
-        pattern_results=pattern_results,
-        ner_results=ner_results,
-        llm_results=llm_results,
-        combined_results=combined_results,
+    html_report = generate_report(
+        input_filename=input_file.name,
+        text_length=len(text),
+        word_count=len(text.split()),
+        pattern_count=len(remove_overlapping_entities(pattern_results)),
+        ner_count=len(remove_overlapping_entities(ner_results)),
+        llm_count=len(remove_overlapping_entities(llm_results)),
+        combined_count=len(remove_overlapping_entities(combined_results)),
+        pattern_legend=build_legend(pattern_results),
+        ner_legend=build_legend(ner_results),
+        llm_legend=build_legend(llm_results),
+        combined_legend=build_legend(combined_results),
+        pattern_highlighted=build_highlighted_text(text, pattern_results),
+        ner_highlighted=build_highlighted_text(text, ner_results),
+        llm_highlighted=build_highlighted_text(text, llm_results),
+        combined_highlighted=build_highlighted_text(text, combined_results),
         anonymized_text=anonymized_text,
-        input_file=input_file,
+        original_text=text,
+        metrics=metrics_for_report,
+        missed_legend=missed_legend,
+        missed_highlighted=missed_highlighted,
     )
-    html_path = output_dir / "demo_bericht.html"
+    ## Include model name in output filename if not default - now chaneged always include it
+    #if model != "ministral-3:8b":
+    model_suffix = model.replace(":", "_").replace("-", "_")
+    html_path = output_dir / f"demo_bericht_{model_suffix}.html"
+    #else:
+    #    html_path = output_dir / "demo_bericht.html"
     html_path.write_text(html_report, encoding="utf-8")
 
     print("\n" + "=" * 60)
@@ -676,6 +535,18 @@ if __name__ == "__main__":
         default=DEFAULT_INPUT_FILE,
         help="Path to input text file (default: data/entlassungsbrief.txt)",
     )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.5,
+        help="IoU overlap threshold for matching (default: 0.5, try 0.3 for partial matches)",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="ministral-3:8b",
+        help="Ollama model to use (default: ministral-3:8b, try ministral-3:14b for better recall)",
+    )
     args = parser.parse_args()
 
-    main(args.input_file)
+    main(args.input_file, overlap_threshold=args.threshold, model=args.model)

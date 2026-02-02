@@ -24,8 +24,13 @@ class DeTaxIdRecognizer(PatternRecognizer):
     # Pattern source: https://www.bzst.de/DE/Privatpersonen/SteuerlicheIdentifikationsnummer/steuerlicheidentifikationsnummer.html
     PATTERNS = [
         Pattern(
-            "Tax ID (with separators)",
+            "Tax ID (3-3-3-2 format)",
             r"\b[1-9][0-9]{2}[\s/-]?[0-9]{3}[\s/-]?[0-9]{3}[\s/-]?[0-9]{2}\b",
+            0.3,
+        ),
+        Pattern(
+            "Tax ID (2-3-3-3 format)",
+            r"\b[1-9][0-9][\s/-][0-9]{3}[\s/-][0-9]{3}[\s/-][0-9]{3}\b",
             0.3,
         ),
         Pattern(

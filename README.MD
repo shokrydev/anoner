@@ -1,3 +1,73 @@
+# Anoner
+
+Fork von [Microsoft Presidio](https://github.com/microsoft/presidio) spezialisiert auf die Anonymisierung deutscher klinischer Freitexte.
+
+## Motivation
+
+Dieses Projekt entstand um die Komplexität von PII-Erkennung in deutschen klinischen Texten praktisch zu erkunden: Tradeoffs zwischen Erkennungsmethoden verstehen, Design-Entscheidungen und ihre Auswirkungen dokumentieren, Herausforderungen der Domäne kennenlernen.
+
+## Demo
+
+> **[📊 Demo-Report (8b)](https://htmlpreview.github.io/?https://github.com/shokrydev/anoner/blob/main/deutsche-demo/ausgabe/demo_bericht_ministral_3_8b.html)** | **[📊 Demo-Report (14b)](https://htmlpreview.github.io/?https://github.com/shokrydev/anoner/blob/main/deutsche-demo/ausgabe/demo_bericht_ministral_3_14b.html)** - Interaktiver Vergleich: Pattern vs. GLiNER vs. LLM
+>
+> **[📝 Findings & Learnings](deutsche-demo/ausgabe/README.md)** - Dokumentierte Erkenntnisse aus der Entwicklung
+>
+> **[📁 Deutsche Demo](deutsche-demo/)** - Vollständige Anleitung, Testdaten und Skripte
+
+## Eigene Erweiterungen
+
+### Deutsche Pattern-Recognizer
+
+13 Recognizer für deutsche Identifier in [`presidio-analyzer/presidio_analyzer/predefined_recognizers/country_specific/germany/`](presidio-analyzer/presidio_analyzer/predefined_recognizers/country_specific/germany/):
+
+**Klinisch/Medizintechnik:**
+- KVNR (Krankenversichertennummer)
+- LANR (Lebenslange Arztnummer)
+- BSNR (Betriebsstättennummer)
+- Telematik-ID (Gesundheits-ID und eHBA)
+
+**Persönliche Dokumente:**
+- Personalausweis, Reisepass, Führerschein
+- Steuer-ID, Sozialversicherungsnummer
+
+**Weitere:**
+- PLZ, Kfz-Kennzeichen, Handelsregisternummer, USt-IdNr
+
+Alle Pattern-Recognizer nutzen Regex mit Prüfsummenvalidierung wo möglich.
+
+*Diese Recognizer konnten als PR dem Upstream-Presidio Repository beigetragen werden.*
+
+### ML-basierte Recognizer
+
+| Recognizer | Beschreibung |
+|------------|--------------|
+| [NvidiaGLiNERPIIRecognizer](presidio-analyzer/presidio_analyzer/predefined_recognizers/ner/nvidia_gliner_pii_recognizer.py) | Zero-shot PII-Erkennung mit 55+ Entity-Typen, automatisches Chunking für 384-Token-Limit |
+| [OllamaNERecognizer](presidio-analyzer/presidio_analyzer/predefined_recognizers/ner/ollama_ne_recognizer.py) | LLM-basierte Erkennung via lokalem Ollama, deutsche Prompt-Erweiterungen, Pydantic-Validierung |
+
+Beide ML-basierten Recognizer sind über `conf/default_recognizers.yaml` konfigurierbar.
+
+### Projektstruktur
+
+```
+anoner/
+├── deutsche-demo/           # Demo mit Testdaten und Report
+│   ├── eingabe/             # Beispiel-Entlassungsbrief
+│   ├── ausgabe/             # Generierter Report + Findings
+│   └── demo_skript.py       # Ausführbares Vergleichsskript
+├── presidio-analyzer/
+│   └── presidio_analyzer/
+│       └── predefined_recognizers/
+│           ├── country_specific/germany/  # 13 deutsche Recognizer
+│           └── ner/                       # GLiNER + Ollama Integration
+└── ...
+```
+
+---
+
+# AB HIER UPSTREAM README
+
+---
+
 # Presidio - Data Protection and De-identification SDK
 
 **Context aware, pluggable and customizable PII de-identification service for text and images.**

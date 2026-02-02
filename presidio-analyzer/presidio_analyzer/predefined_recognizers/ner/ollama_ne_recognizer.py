@@ -32,22 +32,29 @@ logger = logging.getLogger("presidio-analyzer")
 # Base system prompt for PII extraction
 BASE_SYSTEM_PROMPT = """You are a PII extraction system. Extract ALL personally identifiable information from the text.
 
+CRITICAL: Find EVERY occurrence of each entity. If a city name appears 5 times, return 5 separate entries.
+
 Return a JSON array with ALL entities found. Each entity needs:
 - text: exact text span as it appears in the original text
 - label: entity type (use the exact labels provided)
 - start: character start position (0-indexed)
 - end: character end position
 
-Return ONLY the JSON array. Find ALL entities, not just one."""
+Return ONLY the JSON array. Be exhaustive - missing PII is worse than false positives."""
 
 # German-specific additions to the prompt
 GERMAN_PROMPT_ADDITIONS = """
 
-German-specific formats to recognize:
-- AGE: "45-jährig", "Alter: 53", "53 Jahre alt", "im Alter von 67"
-- POSTAL_CODE: "PLZ 12345", "12345 Berlin", "D-12345"
-- PHONE: "+49 30 12345678", "030/12345678", "0170-1234567"
-- DATE: "12.03.1985", "12. März 1985", "geb. 1985" """
+German-specific patterns to find:
+- PERSON: "Herr Bauer", "Frau Klein", "Dr. med. [Name]" - titles with surnames are PERSON
+- LOCATION: Streets ("Königsallee 77"), cities ("Frankfurt", "Köln"), hospital wards ("Station 4C")
+- ORGANIZATION: Clinics, hospitals, insurance companies, medical practices
+- OCCUPATION: Patient jobs in social history section - "Lehrer", "Ingenieurin", "Elektriker"
+- ID: Booking numbers, reference numbers, case IDs (format: PREFIX-YEAR-NUMBER or similar)
+- AGE: "63-jährig", "44-jährige", "51 Jahre alt", "vor 8 Jahren", "im Alter von 73"
+- DATE: "23.09.1990", "am 17.04.2019"
+
+IMPORTANT: Find ALL occurrences of each entity in the text."""
 
 
 class ExtractedEntity(BaseModel):
@@ -304,7 +311,10 @@ Return JSON array with all entities found:"""
             result = response.json()
 
             response_text = result.get("response", "")
-            return self._parse_response(response_text, text)
+            results = self._parse_response(response_text, text)
+            # Find all occurrences of each detected entity
+            results = self._expand_to_all_occurrences(results, text)
+            return results
 
         except httpx.HTTPError as e:
             logger.error(f"Ollama HTTP error: {e}")
@@ -352,6 +362,57 @@ Return JSON array with all entities found:"""
                 continue
 
         return results
+
+    def _expand_to_all_occurrences(
+        self, results: List[RecognizerResult], text: str
+    ) -> List[RecognizerResult]:
+        """
+        Find all occurrences of each detected entity text in the original text.
+
+        LLMs often find an entity once but miss repeated occurrences.
+        This post-processing step finds all instances of each detected text.
+
+        :param results: Initial results from LLM
+        :param text: Original text to search
+        :return: Expanded list with all occurrences
+        """
+        expanded = []
+        seen_positions = set()
+
+        # First, add all original results
+        for r in results:
+            key = (r.start, r.end, r.entity_type)
+            if key not in seen_positions:
+                seen_positions.add(key)
+                expanded.append(r)
+
+        # Then, for each unique entity text, find all occurrences
+        unique_entities = {}
+        for r in results:
+            entity_text = text[r.start:r.end]
+            if entity_text and len(entity_text) >= 3:  # Skip very short texts
+                if entity_text not in unique_entities:
+                    unique_entities[entity_text] = r.entity_type
+
+        for entity_text, entity_type in unique_entities.items():
+            start = 0
+            while True:
+                pos = text.find(entity_text, start)
+                if pos == -1:
+                    break
+                end_pos = pos + len(entity_text)
+                key = (pos, end_pos, entity_type)
+                if key not in seen_positions:
+                    seen_positions.add(key)
+                    expanded.append(RecognizerResult(
+                        entity_type=entity_type,
+                        start=pos,
+                        end=end_pos,
+                        score=0.80,  # Slightly lower score for expanded matches
+                    ))
+                start = pos + 1
+
+        return expanded
 
     def _extract_json(self, response_text: str) -> List[dict]:
         """Extract JSON array from response text."""

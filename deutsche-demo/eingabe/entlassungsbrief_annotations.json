@@ -1,0 +1,434 @@
+{
+  "description": "Refined ground truth annotations for entlassungsbrief.txt",
+  "source_file": "entlassungsbrief.txt",
+  "annotator": "manual_v2",
+  "notes": "Ground truth for patient PII. Excludes doctor roles (Oberarzt) which are not patient-identifying.",
+  "annotations": [
+    {
+      "start": 44,
+      "end": 72,
+      "entity_type": "ORGANIZATION",
+      "text": "Universitätsklinikum München"
+    },
+    {
+      "start": 65,
+      "end": 72,
+      "entity_type": "LOCATION",
+      "text": "München"
+    },
+    {
+      "start": 73,
+      "end": 93,
+      "entity_type": "LOCATION",
+      "text": "Marchioninistraße 15"
+    },
+    {
+      "start": 94,
+      "end": 99,
+      "entity_type": "DE_POSTAL_CODE",
+      "text": "81377"
+    },
+    {
+      "start": 100,
+      "end": 107,
+      "entity_type": "LOCATION",
+      "text": "München"
+    },
+    {
+      "start": 128,
+      "end": 159,
+      "entity_type": "PERSON",
+      "text": "Dr. med. Heinrich-Matteo Müller"
+    },
+    {
+      "start": 166,
+      "end": 175,
+      "entity_type": "DE_LANR",
+      "text": "234567701"
+    },
+    {
+      "start": 182,
+      "end": 191,
+      "entity_type": "DE_BSNR",
+      "text": "720123456"
+    },
+    {
+      "start": 206,
+      "end": 220,
+      "entity_type": "DE_TELEMATIK_ID",
+      "text": "1-234567890123"
+    },
+    {
+      "start": 231,
+      "end": 245,
+      "entity_type": "PERSON",
+      "text": "Max Mustermann"
+    },
+    {
+      "start": 260,
+      "end": 270,
+      "entity_type": "DATE_TIME",
+      "text": "15.03.1965"
+    },
+    {
+      "start": 282,
+      "end": 296,
+      "entity_type": "LOCATION",
+      "text": "Hauptstraße 42"
+    },
+    {
+      "start": 298,
+      "end": 303,
+      "entity_type": "DE_POSTAL_CODE",
+      "text": "80331"
+    },
+    {
+      "start": 304,
+      "end": 311,
+      "entity_type": "LOCATION",
+      "text": "München"
+    },
+    {
+      "start": 321,
+      "end": 336,
+      "entity_type": "PHONE_NUMBER",
+      "text": "+49 89 12345678"
+    },
+    {
+      "start": 345,
+      "end": 368,
+      "entity_type": "EMAIL_ADDRESS",
+      "text": "max.mustermann@email.de"
+    },
+    {
+      "start": 390,
+      "end": 400,
+      "entity_type": "ORGANIZATION",
+      "text": "AOK Bayern"
+    },
+    {
+      "start": 407,
+      "end": 417,
+      "entity_type": "DE_KVNR",
+      "text": "A123456780"
+    },
+    {
+      "start": 434,
+      "end": 449,
+      "entity_type": "DE_TELEMATIK_ID",
+      "text": "10-ABC123XYZ789"
+    },
+    {
+      "start": 470,
+      "end": 480,
+      "entity_type": "DE_PERSONAL_ID",
+      "text": "L01X00T471"
+    },
+    {
+      "start": 492,
+      "end": 506,
+      "entity_type": "DE_TAX_ID",
+      "text": "86 123 456 709"
+    },
+    {
+      "start": 523,
+      "end": 533,
+      "entity_type": "DATE_TIME",
+      "text": "05.01.2026"
+    },
+    {
+      "start": 552,
+      "end": 562,
+      "entity_type": "DATE_TIME",
+      "text": "14.01.2026"
+    },
+    {
+      "start": 572,
+      "end": 589,
+      "entity_type": "LOCATION",
+      "text": "Innere Medizin 3A"
+    },
+    {
+      "start": 843,
+      "end": 853,
+      "entity_type": "AGE",
+      "text": "58-jährige"
+    },
+    {
+      "start": 862,
+      "end": 876,
+      "entity_type": "PERSON",
+      "text": "Max Mustermann"
+    },
+    {
+      "start": 886,
+      "end": 896,
+      "entity_type": "DATE_TIME",
+      "text": "05.01.2026"
+    },
+    {
+      "start": 1181,
+      "end": 1195,
+      "entity_type": "LOCATION",
+      "text": "Hauptstraße 42"
+    },
+    {
+      "start": 1199,
+      "end": 1206,
+      "entity_type": "LOCATION",
+      "text": "München"
+    },
+    {
+      "start": 1311,
+      "end": 1320,
+      "entity_type": "AGE",
+      "text": "10 Jahren"
+    },
+    {
+      "start": 1633,
+      "end": 1653,
+      "entity_type": "PERSON",
+      "text": "Friedrich Mustermann"
+    },
+    {
+      "start": 1677,
+      "end": 1686,
+      "entity_type": "AGE",
+      "text": "62 Jahren"
+    },
+    {
+      "start": 1721,
+      "end": 1738,
+      "entity_type": "PERSON",
+      "text": "Ingrid Mustermann"
+    },
+    {
+      "start": 1768,
+      "end": 1776,
+      "entity_type": "AGE",
+      "text": "82 Jahre"
+    },
+    {
+      "start": 1825,
+      "end": 1840,
+      "entity_type": "PERSON",
+      "text": "Herr Mustermann"
+    },
+    {
+      "start": 1861,
+      "end": 1877,
+      "entity_type": "PERSON",
+      "text": "Erika Mustermann"
+    },
+    {
+      "start": 1911,
+      "end": 1925,
+      "entity_type": "LOCATION",
+      "text": "Hauptstraße 42"
+    },
+    {
+      "start": 1927,
+      "end": 1932,
+      "entity_type": "DE_POSTAL_CODE",
+      "text": "80331"
+    },
+    {
+      "start": 1933,
+      "end": 1940,
+      "entity_type": "LOCATION",
+      "text": "München"
+    },
+    {
+      "start": 1982,
+      "end": 1999,
+      "entity_type": "PERSON",
+      "text": "Thomas Mustermann"
+    },
+    {
+      "start": 2001,
+      "end": 2009,
+      "entity_type": "AGE",
+      "text": "32 Jahre"
+    },
+    {
+      "start": 2023,
+      "end": 2029,
+      "entity_type": "LOCATION",
+      "text": "Berlin"
+    },
+    {
+      "start": 2065,
+      "end": 2073,
+      "entity_type": "AGE",
+      "text": "29 Jahre"
+    },
+    {
+      "start": 2087,
+      "end": 2094,
+      "entity_type": "LOCATION",
+      "text": "Hamburg"
+    },
+    {
+      "start": 2117,
+      "end": 2133,
+      "entity_type": "OCCUPATION",
+      "text": "Bankangestellter"
+    },
+    {
+      "start": 2205,
+      "end": 2215,
+      "entity_type": "AGE",
+      "text": "58-jährige"
+    },
+    {
+      "start": 4295,
+      "end": 4305,
+      "entity_type": "ORGANIZATION",
+      "text": "AOK Bayern"
+    },
+    {
+      "start": 4370,
+      "end": 4386,
+      "entity_type": "ORGANIZATION",
+      "text": "Klinik Höhenried"
+    },
+    {
+      "start": 4388,
+      "end": 4400,
+      "entity_type": "LOCATION",
+      "text": "Am Kurpark 1"
+    },
+    {
+      "start": 4402,
+      "end": 4407,
+      "entity_type": "DE_POSTAL_CODE",
+      "text": "82347"
+    },
+    {
+      "start": 4408,
+      "end": 4435,
+      "entity_type": "LOCATION",
+      "text": "Bernried am Starnberger See"
+    },
+    {
+      "start": 4494,
+      "end": 4507,
+      "entity_type": "PHONE_NUMBER",
+      "text": "+49 8158 24-0"
+    },
+    {
+      "start": 5380,
+      "end": 5395,
+      "entity_type": "PERSON",
+      "text": "Herr Mustermann"
+    },
+    {
+      "start": 5405,
+      "end": 5415,
+      "entity_type": "DATE_TIME",
+      "text": "14.01.2026"
+    },
+    {
+      "start": 5553,
+      "end": 5569,
+      "entity_type": "ORGANIZATION",
+      "text": "Malteser München"
+    },
+    {
+      "start": 5562,
+      "end": 5569,
+      "entity_type": "LOCATION",
+      "text": "München"
+    },
+    {
+      "start": 5586,
+      "end": 5598,
+      "entity_type": "ID",
+      "text": "MT-2026-4711"
+    },
+    {
+      "start": 5687,
+      "end": 5718,
+      "entity_type": "PERSON",
+      "text": "Dr. med. Heinrich-Matteo Müller"
+    },
+    {
+      "start": 5740,
+      "end": 5768,
+      "entity_type": "ORGANIZATION",
+      "text": "Universitätsklinikum München"
+    },
+    {
+      "start": 5761,
+      "end": 5768,
+      "entity_type": "LOCATION",
+      "text": "München"
+    },
+    {
+      "start": 5774,
+      "end": 5791,
+      "entity_type": "PHONE_NUMBER",
+      "text": "+49 89 4400-73521"
+    },
+    {
+      "start": 5800,
+      "end": 5843,
+      "entity_type": "EMAIL_ADDRESS",
+      "text": "heinrich-matteo.mueller@med.uni-muenchen.de"
+    },
+    {
+      "start": 5850,
+      "end": 5859,
+      "entity_type": "DE_LANR",
+      "text": "234567701"
+    },
+    {
+      "start": 5884,
+      "end": 5904,
+      "entity_type": "PERSON",
+      "text": "Dr. med. Klaus Weber"
+    },
+    {
+      "start": 5906,
+      "end": 5933,
+      "entity_type": "ORGANIZATION",
+      "text": "Praxis für Allgemeinmedizin"
+    },
+    {
+      "start": 5935,
+      "end": 5952,
+      "entity_type": "LOCATION",
+      "text": "Leopoldstraße 123"
+    },
+    {
+      "start": 5956,
+      "end": 5961,
+      "entity_type": "DE_POSTAL_CODE",
+      "text": "80804"
+    },
+    {
+      "start": 5962,
+      "end": 5969,
+      "entity_type": "LOCATION",
+      "text": "München"
+    },
+    {
+      "start": 5977,
+      "end": 5986,
+      "entity_type": "DE_BSNR",
+      "text": "710987654"
+    },
+    {
+      "start": 5996,
+      "end": 6020,
+      "entity_type": "EMAIL_ADDRESS",
+      "text": "praxis.weber@t-online.de"
+    },
+    {
+      "start": 6023,
+      "end": 6039,
+      "entity_type": "ORGANIZATION",
+      "text": "Klinik Höhenried"
+    }
+  ]
+}
